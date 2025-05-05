@@ -101,3 +101,13 @@ main {
   color: #666;
   font-style: italic;
 }
+
+.hover-shadow {
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    cursor: pointer;
+}

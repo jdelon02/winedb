@@ -3,143 +3,150 @@
 ## Overview
 React TypeScript application for wine collection management with barcode scanning support. Optimized for Symcode USB scanner with fallback manual entry.
 
-## Core Technical Requirements
+## Core Technical Stack
 - React 18+ with TypeScript
+- React Router for navigation
+- IndexedDB for local storage
 - WCAG 2.1 Level AA compliance
-- Error boundaries for failure handling
-- Local storage for offline capability
-- USB barcode scanner integration
+- Error Boundary implementation
+- USB Barcode Scanner integration
+- React Bootstrap components
 
-## Component Development
+## Component Structure
 ```typescript
-// Component Template
-import React from 'react';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-
-interface ComponentProps {
-  // Define strict prop types
-}
-
-export const Component: React.FC<ComponentProps> = (props) => {
-  // Implement with hooks
-  // Use error boundaries
-  // Follow accessibility guidelines
-};
+// Primary Components
+- Scanner          # Barcode input component
+- WineList         # Collection display with auto-refresh
+- WineDetail       # Individual wine view page
+- ErrorBoundary    # Error handling wrapper
 ```
 
 ## State Management
-- Context API for global scanner/collection state
-- Local state for UI components
-- Consider Zustand for complex flows
-- Implement proper loading states
-
-## Scanner Integration
+### WineContext
 ```typescript
-interface ScannerConfig {
-  debounceMs: number;
-  supportedFormats: string[];
-  maxLength: number;
-}
-
-interface ScannerHook {
-  isReady: boolean;
-  lastScan: string | null;
-  error: Error | null;
-  scan: (input: string) => Promise<void>;
+interface WineContextType {
+    wineService: WineService;
+    isLoading: boolean;
+    isInitialized: boolean;
+    error: Error | null;
+    clearError: () => void;
+    refreshCollection: () => Promise<void>;
+    wines: Wine[];
+    notification: { message: string; show: boolean } | null;
+    hideNotification: () => void;
 }
 ```
 
 ## Data Models
 ```typescript
 interface Wine {
-  id: string;
-  barcode: string;
-  name: string;
-  vintage?: string;
-  producer?: string;
-  region?: string;
-  type?: string;
-  varietal?: string;
-  rating?: number;
-  addedDate: string;
-  lastModified: string;
-}
-
-interface WineCollection {
-  wines: Map<string, Wine>;
-  version: number;
-  lastSync?: string;
+    id: string;
+    barcode: string;
+    name: string;
+    vintage?: string;
+    producer?: string;
+    varietal?: string;
+    rating?: number;
+    created_at: string;
+    updated_at: string;
 }
 ```
 
-## Error Handling
-- Implement ErrorBoundary components
-- Use try/catch for async operations
-- Provide user recovery options
-- Log errors appropriately
+## Storage Implementation
+### IndexedDB Structure
+- WineCollectionDB (main database)
+  - wines (object store)
+- WineApiCache (cache database)
+  - apiCache (object store)
 
-## Testing Requirements
+### Cache Management
 ```typescript
-// Test Template
-import { render, screen, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { axe } from 'jest-axe';
-
-describe('Component', () => {
-  it('should be accessible', async () => {
-    const { container } = render(<Component />);
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-});
+interface CachedData<T> {
+    data: T;
+    timestamp: number;
+    key: string;
+}
 ```
-
-## Performance Guidelines
-- Implement React.memo for expensive renders
-- Use useCallback/useMemo appropriately
-- Lazy load routes and large components
-- Optimize images and bundle size
-
-## Security Considerations
-- Sanitize all user inputs
-- Validate barcode data
-- Implement rate limiting
-- Use secure storage methods
-- Follow OWASP best practices
 
 ## API Integration
-```typescript
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  status: number;
-}
+### Tiered API Approach
+1. Wine-Searcher API (if configured)
+2. Global Wine Score API (if configured)
+3. Open Food Facts API (fallback)
 
-interface WineApi {
-  lookupByBarcode(code: string): Promise<ApiResponse<Wine>>;
-  addWine(wine: Wine): Promise<ApiResponse<void>>;
-  updateWine(id: string, wine: Partial<Wine>): Promise<ApiResponse<void>>;
-}
+### Environment Variables
+```
+WINE_SEARCHER_API_KEY=your_key_here
+WINE_SEARCHER_BASE_URL=https://api.wine-searcher.com/v1
+GLOBAL_WINE_SCORE_API_KEY=your_key_here
+GLOBAL_WINE_SCORE_BASE_URL=https://api.globalwinescore.com/v1
+ENABLE_WINE_SEARCHER=false
+ENABLE_GLOBAL_WINE_SCORE=false
+API_CACHE_DURATION=86400000
 ```
 
-## Local Storage
-```typescript
-interface StorageManager {
-  save(key: string, data: unknown): Promise<void>;
-  load<T>(key: string): Promise<T | null>;
-  clear(): Promise<void>;
-  getSize(): Promise<number>;
-}
-```
+## UI/UX Guidelines
+### Collection View
+- Auto-refresh every 30 seconds
+- Manual refresh button
+- Clickable wine cards
+- Loading states
+- Toast notifications
 
-## Focus Management
-- Maintain focus after scans
-- Implement keyboard navigation
-- Follow WAI-ARIA practices
-- Handle modal focus trapping
+### Wine Detail View
+- Back navigation
+- Full wine details
+- Loading states
+- Error handling
+
+### Accessibility
+- ARIA labels on all interactive elements
+- Proper heading hierarchy
+- Focus management
+- Screen reader announcements
+- Keyboard navigation
+
+## Error Handling
+- Component error boundaries
+- API error fallbacks
+- Database error recovery
+- User-friendly error messages
+- Toast notifications
+
+## Performance Guidelines
+- API response caching
+- Optimistic UI updates
+- Debounced auto-refresh
+- Lazy loading of routes
+- Memoized components where needed
+
+## Testing Requirements
+- Jest + React Testing Library
+- API mocking
+- IndexedDB mocking
+- Accessibility tests
+- Route testing
+- Context testing
+
+## Security
+- API key protection
+- Input sanitization
+- IndexedDB versioning
+- Rate limiting
+- XSS prevention
+
+## Routing Structure
+```typescript
+<Routes>
+    <Route path="/" element={<WineList />} />
+    <Route path="/wine/:id" element={<WineDetail />} />
+</Routes>
+```
 
 Remember:
 - Follow TypeScript strict mode
-- Maintain WCAG compliance
-- Write unit tests for all components
-- Document public APIs and hooks
+- Implement proper error boundaries
+- Handle all async operations safely
+- Maintain WCAG 2.1 Level AA compliance
+- Test all user interactions
+- Document new features

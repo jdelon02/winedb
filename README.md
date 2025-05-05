@@ -1,118 +1,106 @@
-# Wine Collection App
+# Wine Collection Manager
 
-A web-based application for managing wine collections using barcode scanning capabilities, optimized for the Symcode USB barcode scanner.
+A React TypeScript application for managing your wine collection with barcode scanning support.
 
 ## Features
 
-- Barcode scanning for wine bottles using Symcode USB scanner
-- Multiple barcode format support (UPC-A, EAN-13, Code 39, Code 128)
-- Offline storage capability
-- Wine collection management
-- Accessible interface (WCAG 2.1 Level AA compliant)
+- Barcode scanning with Symcode USB scanner support
+- Manual barcode entry fallback
+- Offline-first with IndexedDB storage
+- Wine details lookup via multiple APIs:
+  - Open Food Facts API (free)
+  - Wine-Searcher API (paid subscription)
+  - Global Wine Score API (requires API key)
+- Auto-refreshing wine collection view
+- Detailed wine information pages
+- Toast notifications for collection updates
+- WCAG 2.1 Level AA compliant
+- Responsive design for mobile and desktop
 
-## Technical Stack
+## Requirements
 
-- React 18+ with TypeScript
-- Context API and Zustand for state management
-- Local Storage for offline capability
-- Jest and React Testing Library
-- Web APIs for barcode scanner integration
+- Node.js 16+
+- npm 7+
+- Symcode USB Barcode Scanner (optional)
+- API keys for premium wine data (optional)
 
-## Prerequisites
+## Setup
 
-- Node.js (v16 or higher)
-- npm
-- Symcode USB barcode scanner (or compatible device)
-- Modern web browser (Chrome, Firefox, Safari, Edge)
+```bash
+# Install dependencies
+npm install
 
-## Development Setup
+# Copy environment template
+cp .env.example .env
 
-1. Clone the repository:
-   ```bash
-   git clone [repository-url]
-   cd wine-collection
-   ```
+# Configure API keys (optional)
+# Edit .env with your API keys
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+# Start development server
+npm start
 
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-   This will start the application on http://localhost:3000
+# Run tests
+npm test
 
-## Development Guidelines
+# Build for production
+npm run build
+```
 
-### Component Structure
-- Use functional components with hooks
-- Follow composition over inheritance
-- Implement proper prop validation
-- Use memo/useCallback for performance optimization
+## Development
 
-### State Management
-- React Context for global state
-- Zustand for complex state management
-- Local component state for UI-specific state
-- Implement proper loading/error states
+- Written in TypeScript with React 18+
+- Uses Context API for state management
+- IndexedDB for offline storage
+- React Router for navigation
+- Full WCAG 2.1 Level AA compliance
 
-### Error Handling
-- Error boundaries for graceful failures
-- User-friendly error messages
-- Proper logging and error tracking
-- Recovery strategies for scanner failures
+## Project Structure
 
-### Testing
-- Unit tests with React Testing Library
-- Integration tests for scanner functionality
-- Accessibility tests (jest-axe)
-- E2E tests for critical paths
+```
+src/
+  components/      # React components
+  contexts/        # React contexts
+  db/             # IndexedDB storage
+  repositories/    # Data models
+  services/       # Business logic
+  utils/          # Helper functions
+  icons/          # SVG icons
+  styles/         # CSS styles
+```
 
-### Performance
-- Lazy loading for non-critical components
-- Image optimization for wine labels
-- Proper caching strategies
-- Bundle size optimization
+## Features in Detail
 
-### Security
-- Input sanitization
-- Secure storage of wine collection data
-- Rate limiting for API calls
-- XSS prevention
-- CSRF protection
+### Wine Collection
+- Auto-refreshes every 30 seconds
+- Manual refresh button
+- Clickable wine cards
+- Detailed wine view pages
 
-## Building for Production
+### Barcode Scanning
+- USB scanner support
+- Manual entry fallback
+- Automatic wine data lookup
+- Local caching of results
 
-1. Create a production build:
-   ```bash
-   npm run build
-   ```
+### API Integration
+- Multi-tier wine data lookup
+- Configurable API providers
+- Automatic fallback to free API
+- Response caching
 
-2. The build files will be created in the `build` directory
-
-## Scanner Setup
-
-1. Connect your Symcode USB scanner to your computer
-2. Ensure the scanner is in USB keyboard emulation mode
-3. Test the scanner in any input field
-
-## Troubleshooting
-
-- Verify scanner is in keyboard emulation mode
-- Clear browser cache for display issues
-- Check console for JavaScript errors
-- Ensure proper focus management for scanner input
+### Storage
+- Offline-first approach
+- IndexedDB for persistence
+- Automatic data sync
+- Error recovery
 
 ## Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create your feature branch
+3. Follow the coding guidelines in .github/copilot-instructions.md
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License
+MIT

@@ -1,33 +1,48 @@
 import { Wine } from '../repositories/types';
 import { v4 as uuidv4 } from 'uuid';
 import { IndexedDBStorage } from '../db/storage';
+import { WineApiService } from './WineApiService';
+import { ApiCacheService } from './ApiCacheService';
 
 export class WineService {
     private storage: IndexedDBStorage;
+    private apiService: WineApiService;
+    private apiCache: ApiCacheService;
+    private initialized: boolean = false;
 
     constructor() {
         this.storage = new IndexedDBStorage();
+        this.apiService = new WineApiService();
+        this.apiCache = new ApiCacheService();
     }
 
-    public async initialize(): Promise<void> {
-        try {
-            await this.storage.initialize();
-        } catch (error) {
-            throw new Error(`Failed to initialize wine database: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+    async initialize(): Promise<void> {
+        if (this.initialized) return;
+        await Promise.all([
+            this.storage.initialize(),
+            this.apiCache.initialize()
+        ]);
+        this.initialized = true;
     }
 
     async scanBarcode(barcode: string): Promise<Wine> {
         try {
-            const existing = await this.findWineByBarcode(barcode);
+            // Check local storage first
+            const wines = await this.storage.getAllWines();
+            const existing = wines.find(wine => wine.barcode === barcode);
             if (existing) {
                 return existing;
             }
 
+            // Try to get wine data from API
+            const wineData = await this.apiService.lookupBarcode(barcode);
+            
             const newWine: Wine = {
                 id: uuidv4(),
                 barcode,
-                name: `Wine ${barcode.slice(-4)}`,
+                name: wineData?.name || `Wine ${barcode.slice(-4)}`,
+                producer: wineData?.producer,
+                varietal: wineData?.varietal,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -35,13 +50,9 @@ export class WineService {
             await this.storage.addWine(newWine);
             return newWine;
         } catch (error) {
-            throw new Error(`Failed to process wine scan: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error('Scan error:', error);
+            throw new Error('Failed to process wine scan');
         }
-    }
-
-    private async findWineByBarcode(barcode: string): Promise<Wine | null> {
-        const wines = await this.storage.getAllWines();
-        return wines.find(wine => wine.barcode === barcode) || null;
     }
 
     async updateWineDetails(id: string, details: Partial<Wine>): Promise<Wine> {
