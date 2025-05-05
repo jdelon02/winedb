@@ -24,4 +24,15 @@ export class Environment {
   static get apiCacheDuration(): number {
     return parseInt(process.env.API_CACHE_DURATION || '86400000', 10);
   }
+
+  static get openFoodFactsConfig() {
+    return {
+      baseUrl: process.env.NODE_ENV === 'production' 
+        ? 'https://world.openfoodfacts.org'
+        : 'https://world.openfoodfacts.net',
+      auth: process.env.NODE_ENV === 'production'
+        ? null
+        : { username: 'off', password: 'off' }
+    };
+  }
 }
