@@ -83,6 +83,8 @@ export interface GlobalWineScoreResponse {
 }
 
 // Mapped Wine Data (how we consolidate the APIs)
+export type WineDataSource = 'openfoodfacts' | 'wine-searcher' | 'global-wine-score' | 'wine-scraper';
+
 export interface MappedWineData {
     name: string;
     producer?: string;
@@ -103,7 +105,7 @@ export interface MappedWineData {
         to?: number;
     };
     metadata: {
-        source: 'openfoodfacts' | 'wine-searcher' | 'global-wine-score';
+        source: WineDataSource;
         confidence?: number;
         lastUpdated: string;
     };
