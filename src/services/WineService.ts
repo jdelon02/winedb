@@ -1,4 +1,8 @@
 import { Wine } from '../context/types';
+import { 
+  findFuzzyBarcodeMatch, 
+  normalizeBarcode as normalizeBarcodeUtil
+} from '../utils/barcodeUtils';
 
 export class WineService {
   private dbName = 'WineCollectionDB';
@@ -28,7 +32,8 @@ export class WineService {
           const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
           
           // Create indexes for efficient queries
-          store.createIndex('barcode', 'barcode', { unique: true });
+          // Changed unique to false to allow multiple wines with the same barcode
+          store.createIndex('barcode', 'barcode', { unique: false });
           store.createIndex('updated_at', 'updated_at', { unique: false });
           
           console.log('Database schema created');
@@ -39,8 +44,9 @@ export class WineService {
             const store = transaction.objectStore(this.storeName);
             
             // Check and create the barcode index if not exists
+            // Changed unique to false to allow multiple wines with the same barcode
             if (!store.indexNames.contains('barcode')) {
-              store.createIndex('barcode', 'barcode', { unique: true });
+              store.createIndex('barcode', 'barcode', { unique: false });
               console.log('Created barcode index');
             }
             
@@ -196,7 +202,18 @@ export class WineService {
   // Scan barcode and retrieve or create wine
   async scanBarcode(barcode: string): Promise<Wine> {
     try {
+      console.log(`\n[SCAN EVENT] =====================================================`);
+      console.log(`[SCAN EVENT] 📲 Processing scan: "${barcode}"`);
+      
       await this.checkDatabaseStructure();
+      
+      const normalizedBarcode = normalizeBarcodeUtil(barcode);
+      if (!normalizedBarcode) {
+        console.error(`[SCAN EVENT] ❌ Invalid barcode format: "${barcode}"`);
+        throw new Error('Invalid barcode format');
+      }
+      
+      console.log(`[SCAN EVENT] Normalized barcode: "${normalizedBarcode}"`);
       
       // First check if we already have this wine
       const db = await this.openDatabase();
@@ -210,53 +227,115 @@ export class WineService {
             throw new Error('Barcode index not found - database needs recreation');
           }
           
-          const index = store.index('barcode');
-          const request = index.get(barcode);
+          // Retrieve all wines to allow for matching
+          const request = store.getAll();
           
           request.onsuccess = async () => {
-            const existingWine = request.result;
+            const allWines = request.result;
             
-            if (existingWine) {
-              // Found existing wine - increment quantity
+            // Important: Always check for exact barcode matches first
+            const exactMatch = allWines.find(w => w.barcode === normalizedBarcode);
+            if (exactMatch) {
+              console.log(`[SCAN EVENT] EXACT Match found: "${exactMatch.barcode}" = "${normalizedBarcode}"`);
+              console.log(`[SCAN EVENT] Wine: "${exactMatch.name}" (ID: ${exactMatch.id})`);
+              
               try {
+                // CRITICAL: Always fetch the latest version of the wine DIRECTLY from the database
+                const currentWine = await this.getWineById(exactMatch.id);
+                if (!currentWine) {
+                  throw new Error(`Wine with ID ${exactMatch.id} not found`);
+                }
+                
+                // Calculate new quantity based on the latest data
+                const oldQuantity = currentWine.quantity || 1;
+                const newQuantity = oldQuantity + 1;
+                
+                console.log(`[SCAN EVENT] Incrementing quantity from ${oldQuantity} to ${newQuantity}`);
+                
+                // Create updated wine object with new quantity
                 const updatedWine = {
-                  ...existingWine,
-                  quantity: (existingWine.quantity || 1) + 1
-                };
-                const savedWine = await this.updateWine(updatedWine);
-                console.log('Incremented quantity for existing wine:', savedWine);
-                resolve(savedWine);
-              } catch (error) {
-                reject(error);
-              }
-            } else {
-              try {
-                // If not found, create a new wine entry
-                const newWine: Wine = {
-                  id: crypto.randomUUID(), // Generate a UUID for the record ID
-                  barcode: barcode, // Store the actual scanned barcode
-                  name: `Wine (${barcode})`, // Default name using barcode
-                  producer: '',
-                  vintage: '',
-                  varietal: '',
-                  quantity: 1, // Start with 1 bottle
-                  created_at: new Date().toISOString(),
+                  ...currentWine,
+                  quantity: newQuantity,
                   updated_at: new Date().toISOString()
                 };
                 
-                console.log('Creating new wine with barcode:', barcode);
+                // Update the wine in the database
+                const savedWine = await this.updateWine(updatedWine);
+                console.log(`[SCAN EVENT] Successfully updated wine quantity to ${savedWine.quantity}`);
                 
-                // Save the new wine
-                const savedWine = await this.addWine(newWine);
+                // IMPORTANT: Always resolve with the updated wine to ensure UI gets latest data
                 resolve(savedWine);
               } catch (error) {
+                console.error(`[SCAN EVENT] Error updating wine:`, error);
                 reject(error);
               }
+              return;
+            }
+            
+            // If no exact match, then proceed with fuzzy matching or creation logic
+            // If no exact match, try fuzzy matching
+            const fuzzyMatch = findFuzzyBarcodeMatch(normalizedBarcode, allWines);
+            
+            if (fuzzyMatch) {
+              console.log(`[SCAN EVENT] Found fuzzy barcode match: "${fuzzyMatch.barcode}" for scanned barcode: "${normalizedBarcode}"`);
+              try {
+                // Get the latest version of the wine to ensure we have the most current quantity
+                const currentWine = await this.getWineById(fuzzyMatch.id);
+                if (!currentWine) {
+                  throw new Error(`Wine with ID ${fuzzyMatch.id} not found`);
+                }
+                
+                // Increment quantity based on the latest data
+                const oldQuantity = currentWine.quantity || 1;
+                const newQuantity = oldQuantity + 1;
+                
+                const updatedWine = {
+                  ...currentWine,
+                  quantity: newQuantity,
+                  updated_at: new Date().toISOString()
+                };
+                
+                console.log(`[SCAN EVENT] Incrementing quantity for "${currentWine.name}" from ${oldQuantity} to ${newQuantity}`);
+                
+                const savedWine = await this.updateWine(updatedWine);
+                console.log(`[SCAN EVENT] Successfully updated wine: "${savedWine.name}" (ID: ${savedWine.id})`);
+                resolve(savedWine);
+              } catch (error) {
+                console.error(`[SCAN EVENT] Error updating wine:`, error);
+                reject(error);
+              }
+              return;
+            }
+            
+            // If no match at all, create a new wine
+            try {
+              // If not found, create a new wine entry
+              const newWine: Wine = {
+                id: crypto.randomUUID(), // Generate a UUID for the record ID
+                barcode: normalizedBarcode, // Store the normalized barcode
+                name: `Wine (${normalizedBarcode})`, // Default name using barcode
+                producer: '',
+                vintage: '',
+                varietal: '',
+                quantity: 1, // Start with 1 bottle
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+              
+              console.log(`[SCAN EVENT] Creating new wine with barcode: "${normalizedBarcode}"`);
+              
+              // Save the new wine
+              const savedWine = await this.addWine(newWine);
+              console.log(`[SCAN EVENT] New wine saved: "${savedWine.name}" (ID: ${savedWine.id})`);
+              resolve(savedWine);
+            } catch (error) {
+              console.error(`[SCAN EVENT] Error creating new wine:`, error);
+              reject(error);
             }
           };
           
           request.onerror = () => {
-            reject(new Error(`Failed to scan barcode: ${barcode}`));
+            reject(new Error(`Failed to scan barcode: ${normalizedBarcode}`));
           };
           
           transaction.oncomplete = () => {
@@ -268,7 +347,7 @@ export class WineService {
         }
       });
     } catch (error) {
-      console.error(`Error scanning barcode ${barcode}:`, error);
+      console.error(`[SCAN EVENT] Error scanning barcode "${barcode}":`, error);
       
       if (error instanceof Error && error.message.includes('index not found')) {
         await this.recreateDatabase();

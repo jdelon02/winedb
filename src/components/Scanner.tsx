@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Form, Button, InputGroup, Alert, ButtonGroup } from 'react-bootstrap';
 import { useWineContext } from '../context/WineContext';
 import { Wine } from '../context/types';
@@ -13,63 +13,18 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<'manual' | 'usb' | 'camera'>('usb'); // Add camera mode
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const { wineService, refreshCollection } = useWineContext();
   
   const inputRef = useRef<HTMLInputElement>(null);
   const barcodeBuffer = useRef('');
   const timeoutRef = useRef<number | null>(null);
-
-  // USB Barcode scanner detection and handling
-  useEffect(() => {
-    if (scanMode !== 'usb') return; // Only activate USB scanner in USB mode
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Detect if this is coming from a barcode scanner
-      // Barcode scanners usually send data rapidly with a final Enter key
-      if (e.key !== 'Enter') {
-        // Add character to buffer
-        barcodeBuffer.current += e.key;
-        
-        // Clear previous timeout
-        if (timeoutRef.current !== null) {
-          window.clearTimeout(timeoutRef.current);
-        }
-        
-        // Set new timeout - if no more keys within 50ms, consider it manual typing
-        timeoutRef.current = window.setTimeout(() => {
-          // If too slow between keystrokes, probably not a scanner
-          if (barcodeBuffer.current.length < 5) { // Arbitrary threshold
-            barcodeBuffer.current = '';
-          }
-        }, 50);
-      } else {
-        // Enter key pressed - process the complete barcode
-        if (barcodeBuffer.current.length > 0) {
-          processBarcode(barcodeBuffer.current);
-          barcodeBuffer.current = '';
-          e.preventDefault(); // Prevent form submission
-        }
-      }
-    };
-
-    // Handle scanner input
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Focus the input field
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      if (timeoutRef.current !== null) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [scanMode]);
+  
+  // Flag to track if scanner is enabled
+  const scannerEnabled = scanMode === 'usb';
 
   // Process barcode data
-  const processBarcode = async (code: string) => {
+  const processBarcode = useCallback(async (code: string) => {
     if (!code || code.trim() === '') {
       setError('Please enter a valid barcode');
       return;
@@ -106,7 +61,73 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
       setError(err instanceof Error ? err.message : 'Failed to process barcode');
       setIsScanning(false);
     }
-  };
+  }, [onScanComplete, refreshCollection, scanMode, wineService]);
+
+  // Handle keydown events for barcode scanner
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Detect if this is coming from a barcode scanner
+    // Barcode scanners usually send data rapidly with a final Enter key
+    if (e.key !== 'Enter') {
+      // Add character to buffer
+      barcodeBuffer.current += e.key;
+      
+      // Clear previous timeout
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+      
+      // Set new timeout - if no more keys within 50ms, consider it manual typing
+      timeoutRef.current = window.setTimeout(() => {
+        // If too slow between keystrokes, probably not a scanner
+        if (barcodeBuffer.current.length < 5) { // Arbitrary threshold
+          barcodeBuffer.current = '';
+        }
+      }, 50);
+    } else {
+      // Enter key pressed - process the complete barcode
+      if (barcodeBuffer.current.length > 0) {
+        processBarcode(barcodeBuffer.current);
+        barcodeBuffer.current = '';
+        e.preventDefault(); // Prevent form submission
+      }
+    }
+  }, [processBarcode]);
+
+  // Clear barcode input buffer
+  const clearBarcodeInput = useCallback(() => {
+    barcodeBuffer.current = '';
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  // Listen for barcode scanner events
+  useEffect(() => {
+    if (!scannerEnabled) return;
+
+    // Perform input capturing
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearBarcodeInput();
+    };
+  }, [scannerEnabled, handleKeyDown, clearBarcodeInput, processBarcode]);
+
+  // Handle scan mode changes
+  useEffect(() => {
+    if (scanMode === 'camera') {
+      setShowCameraScanner(true);
+    } else {
+      setShowCameraScanner(false);
+    }
+    
+    // Focus input for manual mode
+    if (scanMode === 'manual' && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [scanMode]);
 
   // Handle manual form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,13 +135,9 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
     await processBarcode(barcode);
   };
 
-  // Handle scan completion from camera
-  const handleCameraScanComplete = (wine: Wine) => {
-    if (onScanComplete) {
-      onScanComplete(wine);
-    }
-    // Switch back to USB mode after successful camera scan
-    setScanMode('usb');
+  // Handle camera scan detection
+  const handleCameraDetection = (detectedCode: string) => {
+    processBarcode(detectedCode);
   };
 
   return (
@@ -196,12 +213,11 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
       
-      {scanMode === 'camera' && (
-        <CameraScanner 
-          onScanComplete={handleCameraScanComplete} 
-          onClose={() => setScanMode('usb')} 
-        />
-      )}
+      <CameraScanner
+        isShowing={showCameraScanner}
+        onDetected={handleCameraDetection}
+        onClose={() => setScanMode('usb')}
+      />
     </div>
   );
 };

@@ -31,6 +31,7 @@ The Wine Collection App allows users to:
 - **WineService**: Manages database operations and API integration
 - **WineContext**: Provides state management across the application
 - **ErrorBoundary**: Handles component-level errors
+- **BarcodeUtils**: Provides utilities for barcode normalization and fuzzy matching
 
 ## Running the Application
 
@@ -66,13 +67,17 @@ Here are some areas where GitHub Copilot can assist with enhancements:
 
 1. **Scanner Enhancement**:
    - ✅ Add camera-based barcode scanning using mobile device cameras (implemented with QuaggaJS)
-   - Improve scanner detection algorithms further
+   - ✅ Improve scanner detection algorithms with fuzzy barcode matching
+   - ✅ Smart barcode normalization for consistent handling
+   - ✅ Enhanced buffer management for reliable consecutive scans
+   - ✅ Detailed scan logging for troubleshooting
    - Add support for additional barcode formats
    - Enhance the camera scanner's UI and performance
 
 2. **Inventory Management**:
    - ✅ Track multiple bottles of the same wine with quantity counter
    - ✅ Quick consumption tracking with one-click decrement
+   - ✅ Consistent quantity increments with consecutive scans
    - Add location tracking (cellar, rack, bin, etc.)
    - Implement drink-by date recommendations
    - Add purchase price and valuation tracking
@@ -136,21 +141,46 @@ src/
 ├── types/           # TypeScript interfaces
 │   ├── index.ts     # Contains TastingNotes and VineyardInfo interfaces
 │   └── quagga.d.ts  # Type definitions for QuaggaJS
+├── utils/           # Utility functions
+│   └── barcodeUtils.ts  # Barcode normalization and fuzzy matching
 ├── App.tsx          # Main application component
 ├── App.css          # Application styles
 └── index.tsx        # Application entry point
 ```
 
 ## Camera Scanning Implementation
-
-The application now implements camera-based barcode scanning using QuaggaJS:
-
 - **CameraScanner Component**: Provides camera access and real-time barcode detection
 - **Scanner Modes**: Users can switch between USB scanner, camera scanner, and manual entry
 - **Multi-Camera Support**: Auto-detection of available cameras with preference for rear cameras
 - **Confidence Tracking**: Implements confidence algorithm requiring multiple consistent scans
 - **Error Handling**: Comprehensive error handling for camera permissions and scanning issues
 - **Barcode Formats**: Support for EAN-13, EAN-8, UPC-A, UPC-E, and CODE-128 formats
+
+## Barcode Fuzzy Matching Implementation
+
+The application implements a sophisticated barcode fuzzy matching system to handle scanning variations:
+
+- **Barcode Normalization**: Standardizes barcode formats across the application
+  - Removes non-numeric characters
+  - Validates barcode length and format
+  - Ensures consistent handling of EAN/UPC codes
+
+- **Fuzzy Matching Strategies**:
+  - **Container Matching**: Detects when one barcode contains another (handles truncated scans)
+  - **Similarity Scoring**: Calculates match percentage based on digit comparison
+
+- **Central Utilities**: 
+  - Shared `barcodeUtils.ts` utility file ensures consistent handling across components
+  - Functions are pure and easily testable
+  - Configurable similarity threshold (default 80%)
+
+- **Enhanced Detection**:
+  - Falls back to fuzzy matching only when exact matches aren't found
+  - Prevents duplicate entries from slightly different scans of the same barcode
+  - Comprehensive logging for easier debugging
+  - Prioritizes matches by confidence level
+
+This implementation ensures users can reliably scan the same bottle multiple times, even when barcode readers capture the code slightly differently each time.
 
 ## Inventory Management Implementation
 

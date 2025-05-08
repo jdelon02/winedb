@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Spinner, Form, Modal, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { useWineContext } from '../context/WineContext';
 import { Wine } from '../context/types';
 import { TastingNotes, VineyardInfo } from '../types';
 import ErrorBoundary from './ErrorBoundary';
+import { normalizeBarcode } from '../utils/barcodeUtils';
 
 const WineDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,15 @@ const WineDetail: React.FC = () => {
   const [tastingNotes, setTastingNotes] = useState<TastingNotes | undefined>(undefined);
   const [vineyardInfo, setVineyardInfo] = useState<VineyardInfo | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('details');
+
+  // State for barcode input buffer
+  const [barcodeBuffer, setBarcodeBuffer] = useState<string>('');
+  const [lastKeypressTime, setLastKeypressTime] = useState<number>(0);
+  const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Constants for barcode scanner behavior
+  const BARCODE_SCAN_TIMEOUT = 50; // Time between keypresses to consider part of same scan (ms)
+  const MIN_BARCODE_LENGTH = 8; // Minimum valid barcode length
 
   useEffect(() => {
     if (!id) return;
@@ -45,6 +55,214 @@ const WineDetail: React.FC = () => {
 
     fetchWine();
   }, [id, wineService]);
+
+  const showQuantityUpdateToast = useCallback((wineName: string) => {
+    const existingNotification = document.getElementById('quantity-update-toast');
+    if (existingNotification) {
+      document.body.removeChild(existingNotification);
+    }
+
+    const notification = document.createElement('div');
+    notification.id = 'quantity-update-toast';
+    notification.className = 'position-fixed top-0 end-0 p-3';
+    notification.style.zIndex = '1050';
+    notification.innerHTML = `
+      <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+          <strong class="me-auto">Quantity Updated</strong>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          Added another bottle of ${wineName}. Quantity: ${isEditing ? editedWine.quantity : wine?.quantity || 1}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      if (document.getElementById('quantity-update-toast')) {
+        document.body.removeChild(document.getElementById('quantity-update-toast')!);
+      }
+    }, 3000);
+  }, [isEditing, editedWine, wine]);
+
+  const handleAddAnother = async () => {
+    if (!wine) return;
+    
+    try {
+      const newQuantity = (wine.quantity || 1) + 1;
+      const updatedWine = {
+        ...wine,
+        quantity: newQuantity,
+        updated_at: new Date().toISOString()
+      };
+      
+      const savedWine = await wineService.updateWine(updatedWine);
+      setWine(savedWine);
+      
+      if (isEditing) {
+        setEditedWine({
+          ...editedWine,
+          quantity: newQuantity
+        });
+      }
+      
+      showQuantityUpdateToast(wine.name);
+      await refreshCollection();
+    } catch (err) {
+      console.error('Error adding another bottle:', err);
+      setError('Failed to update quantity');
+    }
+  };
+
+  // Process complete barcode after collection
+  const processCompleteBarcode = (completeBarcode: string) => {
+    // Add prefix to make log messages stand out in the console
+    console.log(`\n📟 [BARCODE SCAN] ===== PROCESSING COMPLETE BARCODE =====`);
+    console.log(`📟 [BARCODE SCAN] Raw barcode input: "${completeBarcode}"`);
+    
+    if (completeBarcode.length < MIN_BARCODE_LENGTH) {
+      console.warn(`📟 [BARCODE SCAN] ⚠️ Barcode too short to be valid: "${completeBarcode}" (length: ${completeBarcode.length})`);
+      return;
+    }
+    
+    if (wine) {
+      const normalizedScannedBarcode = normalizeBarcode(completeBarcode);
+      const normalizedCurrentBarcode = normalizeBarcode(wine.barcode);
+      
+      console.log(`📟 [BARCODE SCAN] Normalized scanned barcode: "${normalizedScannedBarcode}"`);
+      console.log(`📟 [BARCODE SCAN] Current wine barcode: "${normalizedCurrentBarcode}"`);
+      
+      // Check if scanned barcode matches current wine
+      if (normalizedScannedBarcode === normalizedCurrentBarcode) {
+        console.log(`📟 [BARCODE SCAN] ✅ MATCH FOUND - Same wine scanned again: "${normalizedScannedBarcode}"`);
+        console.log(`📟 [BARCODE SCAN] Current quantity: ${wine.quantity || 1}, about to increment`);
+        
+        // Increment quantity and update
+        handleAddAnother();
+      } else {
+        // Different wine scanned
+        console.log(`📟 [BARCODE SCAN] ❌ NO MATCH - Different wine barcode detected: "${normalizedScannedBarcode}"`);
+        
+        const existingNotification = document.getElementById('different-wine-toast');
+        if (existingNotification) {
+          document.body.removeChild(existingNotification);
+        }
+    
+        const notification = document.createElement('div');
+        notification.id = 'different-wine-toast';
+        notification.className = 'position-fixed top-0 end-0 p-3';
+        notification.style.zIndex = '1050';
+        notification.innerHTML = `
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning text-white">
+              <strong class="me-auto">Different Wine Detected</strong>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              <p>You scanned a different wine barcode.</p>
+              <div class="mt-2 pt-2 border-top d-flex justify-content-end">
+                <button type="button" class="btn btn-sm btn-secondary me-2" id="stay-button">
+                  Stay Here
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" id="go-to-wine-button">
+                  Go to That Wine
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(notification);
+    
+        document.getElementById('stay-button')?.addEventListener('click', () => {
+          if (document.getElementById('different-wine-toast')) {
+            document.body.removeChild(document.getElementById('different-wine-toast')!);
+          }
+        });
+    
+        document.getElementById('go-to-wine-button')?.addEventListener('click', () => {
+          if (document.getElementById('different-wine-toast')) {
+            document.body.removeChild(document.getElementById('different-wine-toast')!);
+          }
+          navigate(`/?scanBarcode=${normalizedScannedBarcode}`);
+        });
+    
+        setTimeout(() => {
+          if (document.getElementById('different-wine-toast')) {
+            document.body.removeChild(document.getElementById('different-wine-toast')!);
+          }
+        }, 10000);
+      }
+    } else {
+      console.warn(`📟 [BARCODE SCAN] ⚠️ No current wine loaded, cannot compare barcode`);
+    }
+    
+    console.log(`📟 [BARCODE SCAN] ===== SCAN PROCESSING COMPLETE =====\n`);
+  };
+
+  // Handle keydown for barcode scanner
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    const now = Date.now();
+    
+    // Only log keypresses that might be part of a barcode
+    if (/[\d\n\r]/.test(event.key) || event.key === 'Enter') {
+      console.log(`🔤 [KEY EVENT] "${event.key}" pressed in WineDetail component`);
+    }
+    
+    // Reset barcode buffer if too much time has passed between keypresses
+    if (now - lastKeypressTime > BARCODE_SCAN_TIMEOUT && barcodeBuffer.length > 0) {
+      console.log(`🔤 [KEY EVENT] ⏱️ Timeout reached (${now - lastKeypressTime}ms), resetting barcode buffer: "${barcodeBuffer}"`);
+      setBarcodeBuffer('');
+    }
+    
+    setLastKeypressTime(now);
+    
+    // Clear any existing timeout
+    if (barcodeTimeoutRef.current) {
+      clearTimeout(barcodeTimeoutRef.current);
+    }
+    
+    if (event.key === 'Enter') {
+      // If Enter is pressed, process the complete barcode
+      console.log(`🔤 [KEY EVENT] Enter key detected with barcode buffer: "${barcodeBuffer}" (length: ${barcodeBuffer.length})`);
+      
+      if (barcodeBuffer.length > 0) {
+        processCompleteBarcode(barcodeBuffer);
+        setBarcodeBuffer('');
+      } else {
+        console.log(`🔤 [KEY EVENT] Empty buffer on Enter key - likely manual keystroke, ignoring`);
+      }
+    } else if (/[\d]/.test(event.key)) {
+      // If key is a digit, add to buffer
+      const newBuffer = barcodeBuffer + event.key;
+      console.log(`🔤 [KEY EVENT] Adding digit to barcode buffer: "${newBuffer}"`);
+      setBarcodeBuffer(newBuffer);
+      
+      // Set a timeout to process the barcode if no more keys are pressed
+      barcodeTimeoutRef.current = setTimeout(() => {
+        if (newBuffer.length >= MIN_BARCODE_LENGTH) {
+          console.log(`🔤 [KEY EVENT] ⏱️ Buffer timeout with complete barcode: "${newBuffer}" (length: ${newBuffer.length})`);
+          processCompleteBarcode(newBuffer);
+          setBarcodeBuffer('');
+        } else if (newBuffer.length > 0) {
+          console.log(`🔤 [KEY EVENT] ⏱️ Buffer timeout but barcode too short: "${newBuffer}" (length: ${newBuffer.length})`);
+          setBarcodeBuffer('');
+        }
+      }, BARCODE_SCAN_TIMEOUT + 50);
+    }
+  }, [barcodeBuffer, lastKeypressTime, wine, handleAddAnother, processCompleteBarcode]);
+
+  useEffect(() => {
+    // Need to handle barcode scanner input
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (barcodeTimeoutRef.current) {
+        clearTimeout(barcodeTimeoutRef.current);
+      }
+    };
+  }, [handleKeyDown]);
 
   const handleBack = () => {
     navigate('/');
@@ -91,10 +309,9 @@ const WineDetail: React.FC = () => {
     if (!editedWine || !wine) return;
 
     try {
-      // Make sure we have all required fields from the original wine
       const updatedWine: Wine = {
-        ...wine, // Start with the original wine to ensure all required fields are present
-        ...editedWine, // Override with edited values
+        ...wine,
+        ...editedWine,
         tastingNotes: tastingNotes,
         vineyard: vineyardInfo,
         updated_at: new Date().toISOString()
@@ -134,10 +351,8 @@ const WineDetail: React.FC = () => {
     
     try {
       if (!wine.quantity || wine.quantity <= 1) {
-        // Show delete confirmation if it's the last bottle
         setShowDeleteModal(true);
       } else {
-        // Decrement quantity
         const updatedWine = {
           ...wine,
           quantity: wine.quantity - 1,
@@ -568,7 +783,14 @@ const WineDetail: React.FC = () => {
             <Card.Body>
               <Row>
                 <Col md={3} className="fw-bold">Barcode:</Col>
-                <Col md={9}>{wine.barcode}</Col>
+                <Col md={9}>
+                  {wine.barcode || 'No barcode available'}
+                  {wine.barcode && wine.id === wine.barcode && (
+                    <span className="ms-2 text-danger">
+                      <small>(Using ID as barcode - please scan again)</small>
+                    </span>
+                  )}
+                </Col>
               </Row>
               <Row className="mt-3">
                 <Col md={3} className="fw-bold">Quantity:</Col>
@@ -579,13 +801,7 @@ const WineDetail: React.FC = () => {
                       variant="outline-primary" 
                       size="sm"
                       className="ms-3"
-                      onClick={() => {
-                        setEditedWine({
-                          ...wine,
-                          quantity: (wine.quantity || 1) + 1
-                        });
-                        setIsEditing(true);
-                      }}
+                      onClick={handleAddAnother}
                       aria-label="Add another bottle"
                     >
                       + Add Another
