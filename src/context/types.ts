@@ -1,4 +1,5 @@
 import { WineService } from '../services/WineService';
+import { TastingNotes, VineyardInfo } from '../types';
 
 // Wine data structure
 export interface Wine {
@@ -12,6 +13,8 @@ export interface Wine {
   quantity: number; // Track number of bottles
   created_at: string;
   updated_at: string;
+  tastingNotes?: TastingNotes;
+  vineyard?: VineyardInfo;
 }
 
 // WineContext type definition

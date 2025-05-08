@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, Button, Container, Row, Col, Spinner, Toast, Form, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useNavigate, Link } from 'react-router-dom';
+import { Card, Button, Container, Row, Col, Spinner, Toast, Form, Badge } from 'react-bootstrap';
 import { useWineContext } from '../context/WineContext';
 import { Wine } from '../context/types';
+import { TastingNotes } from '../types';
 import ErrorBoundary from './ErrorBoundary';
 import Scanner from './Scanner';
+import QuickReviewModal from './QuickReviewModal';
 
 const WineList: React.FC = () => {
   const { wines, isLoading, refreshCollection, notification, hideNotification, wineService } = useWineContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredWines, setFilteredWines] = useState<Wine[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const navigate = useNavigate();
 
   // Filter wines based on search term
@@ -77,6 +81,31 @@ const WineList: React.FC = () => {
       console.error('Error consuming wine:', error);
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  // Handler for opening the quick review modal
+  const handleOpenReviewModal = (e: React.MouseEvent, wine: Wine) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedWine(wine);
+    setShowReviewModal(true);
+  };
+
+  // Handler for saving a quick review
+  const handleSaveReview = async (wine: Wine, tastingNotes: TastingNotes) => {
+    try {
+      const updatedWine: Wine = {
+        ...wine,
+        tastingNotes,
+        updated_at: new Date().toISOString()
+      };
+      
+      await wineService.updateWine(updatedWine);
+      await refreshCollection();
+      setShowReviewModal(false);
+    } catch (error) {
+      console.error('Error saving review:', error);
     }
   };
 
@@ -160,52 +189,105 @@ const WineList: React.FC = () => {
                   role="button"
                 >
                   <Card.Body>
-                    <div className="d-flex justify-content-between align-items-start">
-                      <Card.Title>{wine.name}</Card.Title>
-                      <div className="d-flex align-items-center">
-                        {(wine.quantity && wine.quantity > 1) && (
-                          <Badge bg="primary" pill className="me-2">
-                            {wine.quantity} bottles
-                          </Badge>
-                        )}
-                        
-                        {/* Quick consume button */}
-                        <OverlayTrigger
-                          placement="top"
-                          overlay={<Tooltip id={`tooltip-${wine.id}`}>Mark as consumed</Tooltip>}
-                        >
-                          <Button 
-                            variant="outline-danger" 
-                            size="sm"
-                            onClick={(e) => handleQuickConsume(e, wine)}
-                            disabled={processingId === wine.id}
-                            aria-label="Mark as consumed"
-                            className="quick-consume-btn"
-                            style={{ minWidth: '36px' }}
-                          >
-                            {processingId === wine.id ? (
-                              <Spinner animation="border" size="sm" />
-                            ) : (
-                              <span>-1</span>
-                            )}
-                          </Button>
-                        </OverlayTrigger>
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <Card.Title>{wine.name}</Card.Title>
+                        {wine.producer && <Card.Subtitle className="mb-2 text-muted">{wine.producer}</Card.Subtitle>}
                       </div>
+                      <Badge bg="primary" pill>
+                        {wine.quantity || 1}
+                      </Badge>
                     </div>
-                    {wine.producer && <Card.Subtitle className="mb-2 text-muted">{wine.producer}</Card.Subtitle>}
-                    <Card.Text as="div">
-                      {wine.vintage && <div><strong>Vintage:</strong> {wine.vintage}</div>}
-                      {wine.varietal && <div><strong>Varietal:</strong> {wine.varietal}</div>}
-                      {wine.rating && <div><strong>Rating:</strong> {wine.rating}/5</div>}
-                    </Card.Text>
+                    
+                    {/* Display tasting rating with stars if available */}
+                    {wine.tastingNotes && wine.tastingNotes.rating > 0 && (
+                      <div className="wine-rating mb-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <span key={i} style={{ 
+                            color: i < wine.tastingNotes!.rating ? 'gold' : 'lightgray',
+                            fontSize: '1.2rem',
+                            marginRight: '2px'
+                          }}>★</span>
+                        ))}
+                        <span className="ms-1 text-muted small">
+                          ({new Date(wine.tastingNotes.date).toLocaleDateString()})
+                        </span>
+                      </div>
+                    )}
+                    
+                    {wine.vintage && <div className="mb-1"><strong>Vintage:</strong> {wine.vintage}</div>}
+                    {wine.varietal && <div className="mb-1"><strong>Varietal:</strong> {wine.varietal}</div>}
+                    
+                    {/* Display vineyard info if available */}
+                    {wine.vineyard && wine.vineyard.name && (
+                      <div className="mb-1">
+                        <strong>Vineyard:</strong> {wine.vineyard.name}
+                        {wine.vineyard.location && <span> ({wine.vineyard.location})</span>}
+                      </div>
+                    )}
+                    
+                    {/* Brief tasting notes preview if available */}
+                    {wine.tastingNotes && wine.tastingNotes.notes && (
+                      <div className="mt-2 tasting-preview">
+                        <small className="text-muted">
+                          "{wine.tastingNotes.notes.length > 60 
+                            ? wine.tastingNotes.notes.substring(0, 60) + '...' 
+                            : wine.tastingNotes.notes}"
+                        </small>
+                      </div>
+                    )}
                   </Card.Body>
-                  <Card.Footer className="text-muted">
-                    <small>Added: {new Date(wine.created_at).toLocaleDateString()}</small>
+                  <Card.Footer className="d-flex justify-content-between align-items-center">
+                    <small className="text-muted">
+                      Added: {new Date(wine.created_at).toLocaleDateString()}
+                    </small>
+                    <div>
+                      <Button 
+                        variant="outline-secondary" 
+                        size="sm"
+                        onClick={(e) => handleOpenReviewModal(e, wine)}
+                        className="me-2"
+                        aria-label={`Review ${wine.name}`}
+                      >
+                        {wine.tastingNotes ? 'Update Review' : 'Add Review'}
+                      </Button>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleQuickConsume(e, wine);
+                        }}
+                        className="me-2"
+                        aria-label={`Consume ${wine.name}`}
+                      >
+                        Consume
+                      </Button>
+                      <Link 
+                        to={`/wine/${wine.id}`} 
+                        className="btn btn-primary btn-sm"
+                        aria-label={`View details for ${wine.name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Details
+                      </Link>
+                    </div>
                   </Card.Footer>
                 </Card>
               </Col>
             ))}
           </Row>
+        )}
+        
+        {/* Quick Review Modal */}
+        {selectedWine && (
+          <QuickReviewModal
+            show={showReviewModal}
+            wine={selectedWine}
+            onHide={() => setShowReviewModal(false)}
+            onSave={handleSaveReview}
+          />
         )}
         
         {/* Toast notification */}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Spinner, Form, Modal, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Spinner, Form, Modal, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { useWineContext } from '../context/WineContext';
 import { Wine } from '../context/types';
+import { TastingNotes, VineyardInfo } from '../types';
 import ErrorBoundary from './ErrorBoundary';
 
 const WineDetail: React.FC = () => {
@@ -18,6 +19,9 @@ const WineDetail: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDecrementing, setIsDecrementing] = useState(false);
+  const [tastingNotes, setTastingNotes] = useState<TastingNotes | undefined>(undefined);
+  const [vineyardInfo, setVineyardInfo] = useState<VineyardInfo | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
     if (!id) return;
@@ -28,6 +32,8 @@ const WineDetail: React.FC = () => {
         if (fetchedWine) {
           setWine(fetchedWine);
           setEditedWine(fetchedWine);
+          setTastingNotes(fetchedWine.tastingNotes || undefined);
+          setVineyardInfo(fetchedWine.vineyard || undefined);
         } else {
           setError('Wine not found');
         }
@@ -67,11 +73,34 @@ const WineDetail: React.FC = () => {
     }
   };
 
+  const handleTastingNotesChange = (field: keyof TastingNotes, value: any) => {
+    setTastingNotes(prev => ({
+      ...(prev || { date: new Date().toISOString(), rating: 0, notes: '' }),
+      [field]: value
+    }));
+  };
+
+  const handleVineyardInfoChange = (field: keyof VineyardInfo, value: any) => {
+    setVineyardInfo(prev => ({
+      ...(prev || { name: '' }),
+      [field]: value
+    }));
+  };
+
   const handleSave = async () => {
-    if (!editedWine) return;
+    if (!editedWine || !wine) return;
 
     try {
-      const updated = await wineService.updateWine(editedWine);
+      // Make sure we have all required fields from the original wine
+      const updatedWine: Wine = {
+        ...wine, // Start with the original wine to ensure all required fields are present
+        ...editedWine, // Override with edited values
+        tastingNotes: tastingNotes,
+        vineyard: vineyardInfo,
+        updated_at: new Date().toISOString()
+      };
+
+      const updated = await wineService.updateWine(updatedWine);
       setWine(updated);
       setIsEditing(false);
       await refreshCollection();
@@ -232,140 +261,304 @@ const WineDetail: React.FC = () => {
         </div>
 
         {isEditing ? (
-          <Card>
-            <Card.Header>
-              <h1 className="h3">Edit Wine</h1>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Barcode</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="text"
-                      name="barcode"
-                      value={editedWine.barcode || ''}
-                      onChange={handleChange}
-                      disabled
-                    />
-                    <Form.Text className="text-muted">
-                      The original scanned barcode. This field cannot be edited.
-                    </Form.Text>
-                  </Col>
-                </Form.Group>
+          <Form>
+            <Tabs 
+              activeKey={activeTab} 
+              onSelect={(k) => setActiveTab(k || 'details')}
+              className="mb-3"
+            >
+              <Tab eventKey="details" title="Details">
+                <Card>
+                  <Card.Header>
+                    <h1 className="h3">Edit Wine</h1>
+                  </Card.Header>
+                  <Card.Body>
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Barcode</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="text"
+                          name="barcode"
+                          value={editedWine.barcode || ''}
+                          onChange={handleChange}
+                          disabled
+                        />
+                        <Form.Text className="text-muted">
+                          The original scanned barcode. This field cannot be edited.
+                        </Form.Text>
+                      </Col>
+                    </Form.Group>
 
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Quantity</Form.Label>
-                  <Col sm={9}>
-                    <InputGroup>
-                      <Button 
-                        variant="outline-secondary"
-                        onClick={() => {
-                          if ((editedWine.quantity || 0) > 1) {
-                            setEditedWine({
-                              ...editedWine,
-                              quantity: (editedWine.quantity || 1) - 1
-                            });
-                          }
-                        }}
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </Button>
-                      <Form.Control
-                        type="number"
-                        name="quantity"
-                        value={editedWine.quantity || 1}
-                        onChange={handleChange}
-                        min="1"
-                        style={{ textAlign: 'center' }}
-                        aria-label="Quantity"
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Quantity</Form.Label>
+                      <Col sm={9}>
+                        <InputGroup>
+                          <Button 
+                            variant="outline-secondary"
+                            onClick={() => {
+                              if ((editedWine.quantity || 0) > 1) {
+                                setEditedWine({
+                                  ...editedWine,
+                                  quantity: (editedWine.quantity || 1) - 1
+                                });
+                              }
+                            }}
+                            aria-label="Decrease quantity"
+                          >
+                            -
+                          </Button>
+                          <Form.Control
+                            type="number"
+                            name="quantity"
+                            value={editedWine.quantity || 1}
+                            onChange={handleChange}
+                            min="1"
+                            style={{ textAlign: 'center' }}
+                            aria-label="Quantity"
+                          />
+                          <Button 
+                            variant="outline-secondary"
+                            onClick={() => {
+                              setEditedWine({
+                                ...editedWine,
+                                quantity: (editedWine.quantity || 1) + 1
+                              });
+                            }}
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </Button>
+                        </InputGroup>
+                        <Form.Text className="text-muted">
+                          Number of bottles in your collection
+                        </Form.Text>
+                      </Col>
+                    </Form.Group>
+
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Name</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="text"
+                          name="name"
+                          value={editedWine.name}
+                          onChange={handleChange}
+                          required
+                        />
+                      </Col>
+                    </Form.Group>
+
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Producer</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="text"
+                          name="producer"
+                          value={editedWine.producer || ''}
+                          onChange={handleChange}
+                        />
+                      </Col>
+                    </Form.Group>
+
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Vintage</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="text"
+                          name="vintage"
+                          value={editedWine.vintage || ''}
+                          onChange={handleChange}
+                        />
+                      </Col>
+                    </Form.Group>
+
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Varietal</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="text"
+                          name="varietal"
+                          value={editedWine.varietal || ''}
+                          onChange={handleChange}
+                        />
+                      </Col>
+                    </Form.Group>
+
+                    <Form.Group as={Row} className="mb-3">
+                      <Form.Label column sm={3}>Rating (1-5)</Form.Label>
+                      <Col sm={9}>
+                        <Form.Control
+                          type="number"
+                          name="rating"
+                          value={editedWine.rating || ''}
+                          onChange={handleChange}
+                          min={1}
+                          max={5}
+                          step={0.1}
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+              </Tab>
+
+              <Tab eventKey="tasting" title="Tasting Notes">
+                <Card className="mb-3">
+                  <Card.Body>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Tasting Date</Form.Label>
+                          <Form.Control 
+                            type="date" 
+                            value={tastingNotes?.date ? new Date(tastingNotes.date).toISOString().split('T')[0] : ''}
+                            onChange={(e) => handleTastingNotesChange('date', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Rating (1-5)</Form.Label>
+                          <Form.Control 
+                            type="number" 
+                            min="1" 
+                            max="5" 
+                            value={tastingNotes?.rating || ''}
+                            onChange={(e) => handleTastingNotesChange('rating', parseInt(e.target.value))}
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                    
+                    <Form.Group className="mb-3">
+                      <Form.Label>Overall Notes</Form.Label>
+                      <Form.Control 
+                        as="textarea" 
+                        rows={3}
+                        value={tastingNotes?.notes || ''}
+                        onChange={(e) => handleTastingNotesChange('notes', e.target.value)}
                       />
-                      <Button 
-                        variant="outline-secondary"
-                        onClick={() => {
-                          setEditedWine({
-                            ...editedWine,
-                            quantity: (editedWine.quantity || 1) + 1
-                          });
-                        }}
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </Button>
-                    </InputGroup>
-                    <Form.Text className="text-muted">
-                      Number of bottles in your collection
-                    </Form.Text>
-                  </Col>
-                </Form.Group>
+                    </Form.Group>
+                    
+                    <Row>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Aroma</Form.Label>
+                          <Form.Control 
+                            type="text"
+                            value={tastingNotes?.aroma || ''}
+                            onChange={(e) => handleTastingNotesChange('aroma', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Taste</Form.Label>
+                          <Form.Control 
+                            type="text"
+                            value={tastingNotes?.taste || ''}
+                            onChange={(e) => handleTastingNotesChange('taste', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Finish</Form.Label>
+                          <Form.Control 
+                            type="text"
+                            value={tastingNotes?.finish || ''}
+                            onChange={(e) => handleTastingNotesChange('finish', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                    
+                    <Form.Group className="mb-3">
+                      <Form.Label>Food Pairings (comma separated)</Form.Label>
+                      <Form.Control 
+                        type="text"
+                        value={tastingNotes?.foodPairings?.join(', ') || ''}
+                        onChange={(e) => handleTastingNotesChange('foodPairings', 
+                          e.target.value.split(',').map(item => item.trim()).filter(item => item)
+                        )}
+                      />
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+              </Tab>
 
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Name</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="text"
-                      name="name"
-                      value={editedWine.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Col>
-                </Form.Group>
-
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Producer</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="text"
-                      name="producer"
-                      value={editedWine.producer || ''}
-                      onChange={handleChange}
-                    />
-                  </Col>
-                </Form.Group>
-
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Vintage</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="text"
-                      name="vintage"
-                      value={editedWine.vintage || ''}
-                      onChange={handleChange}
-                    />
-                  </Col>
-                </Form.Group>
-
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Varietal</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="text"
-                      name="varietal"
-                      value={editedWine.varietal || ''}
-                      onChange={handleChange}
-                    />
-                  </Col>
-                </Form.Group>
-
-                <Form.Group as={Row} className="mb-3">
-                  <Form.Label column sm={3}>Rating (1-5)</Form.Label>
-                  <Col sm={9}>
-                    <Form.Control
-                      type="number"
-                      name="rating"
-                      value={editedWine.rating || ''}
-                      onChange={handleChange}
-                      min={1}
-                      max={5}
-                      step={0.1}
-                    />
-                  </Col>
-                </Form.Group>
-              </Form>
-            </Card.Body>
-          </Card>
+              <Tab eventKey="vineyard" title="Vineyard Info">
+                <Card className="mb-3">
+                  <Card.Body>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Vineyard Name</Form.Label>
+                      <Form.Control 
+                        type="text"
+                        value={vineyardInfo?.name || ''}
+                        onChange={(e) => handleVineyardInfoChange('name', e.target.value)}
+                      />
+                    </Form.Group>
+                    
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Owner</Form.Label>
+                          <Form.Control 
+                            type="text"
+                            value={vineyardInfo?.owner || ''}
+                            onChange={(e) => handleVineyardInfoChange('owner', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Location</Form.Label>
+                          <Form.Control 
+                            type="text"
+                            value={vineyardInfo?.location || ''}
+                            onChange={(e) => handleVineyardInfoChange('location', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                    
+                    <Form.Group className="mb-3">
+                      <Form.Label>Description</Form.Label>
+                      <Form.Control 
+                        as="textarea" 
+                        rows={3}
+                        value={vineyardInfo?.description || ''}
+                        onChange={(e) => handleVineyardInfoChange('description', e.target.value)}
+                      />
+                    </Form.Group>
+                    
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Founded Year</Form.Label>
+                          <Form.Control 
+                            type="number"
+                            value={vineyardInfo?.foundedYear || ''}
+                            onChange={(e) => handleVineyardInfoChange('foundedYear', e.target.value ? parseInt(e.target.value) : undefined)}
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Website</Form.Label>
+                          <Form.Control 
+                            type="url"
+                            value={vineyardInfo?.website || ''}
+                            onChange={(e) => handleVineyardInfoChange('website', e.target.value)}
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </Card>
+              </Tab>
+            </Tabs>
+          </Form>
         ) : (
           <Card>
             <Card.Header>

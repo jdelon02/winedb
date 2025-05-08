@@ -2,7 +2,7 @@ import { Wine } from '../context/types';
 
 export class WineService {
   private dbName = 'WineCollectionDB';
-  private dbVersion = 1;
+  private dbVersion = 2; // Increment database version
   private storeName = 'wines';
   
   // Open the IndexedDB database with proper version handling
@@ -50,6 +50,12 @@ export class WineService {
               console.log('Created updated_at index');
             }
           }
+        }
+
+        // For upgrading from version 1 to 2 (adding tasting notes and vineyard)
+        if (event.oldVersion < 2) {
+          console.log('Upgrading database to version 2');
+          // No need to create new indexes or stores, just the schema is changing
         }
       };
     });
