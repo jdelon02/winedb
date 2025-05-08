@@ -1,33 +1,29 @@
 import React from 'react';
-import { Container, Navbar } from 'react-bootstrap';
-import { WineProvider } from './contexts/WineContext';
-import { Scanner } from './components/Scanner';
-import { WineList } from './components/WineList';
-import { WineDetail } from './components/WineDetail';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Container } from 'react-bootstrap';
+import WineList from './components/WineList';
+import WineDetail from './components/WineDetail';
+import { WineProvider } from './context/WineContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
-import './styles/animations.css';
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
       <WineProvider>
-        <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
-          <Container>
-            <Navbar.Brand>Wine Collection Manager</Navbar.Brand>
+        <Router>
+          <Container className="app-container">
+            <div className="wine-app">
+              <Routes>
+                <Route path="/" element={<WineList />} />
+                <Route path="/wine/:id" element={<WineDetail />} />
+              </Routes>
+            </div>
           </Container>
-        </Navbar>
-        <Container>
-          <Scanner />
-          <Routes>
-            <Route path="/" element={<WineList />} />
-            <Route path="/wine/:id" element={<WineDetail />} />
-          </Routes>
-        </Container>
+        </Router>
       </WineProvider>
-    </BrowserRouter>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;

@@ -1,4 +1,3 @@
-import { Wine } from '../repositories/types';
 import { Environment } from '../config/environment';
 import { ApiCacheService } from './ApiCacheService';
 import { 
@@ -49,7 +48,7 @@ export class WineApiService {
 
     private async searchOpenFoodFacts(barcode: string): Promise<MappedWineData | null> {
         const cacheKey = `off_${barcode}`;
-        const cached = await this.apiCache.get<MappedWineData>(cacheKey, Environment.apiCacheDuration);
+        const cached = await this.apiCache.get<MappedWineData>(cacheKey);
         if (cached) return cached;
 
         const response = await fetch(
@@ -86,7 +85,7 @@ export class WineApiService {
         if (!config.apiKey || !config.baseUrl) return null;
 
         const cacheKey = `ws_${barcode}`;
-        const cached = await this.apiCache.get<MappedWineData>(cacheKey, Environment.apiCacheDuration);
+        const cached = await this.apiCache.get<MappedWineData>(cacheKey);
         if (cached) return cached;
 
         try {
@@ -130,7 +129,7 @@ export class WineApiService {
         if (!config.apiKey || !config.baseUrl) return null;
 
         const cacheKey = `gws_${barcode}`;
-        const cached = await this.apiCache.get<MappedWineData>(cacheKey, Environment.apiCacheDuration);
+        const cached = await this.apiCache.get<MappedWineData>(cacheKey);
         if (cached) return cached;
 
         try {

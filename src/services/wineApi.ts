@@ -1,4 +1,4 @@
-import { WineDetails, ApiResponse, WineApiConfig } from './types';
+import { WineDetails, ApiResponse, WineApiConfig } from '../types';
 
 // Mock wine database
 const mockWineDatabase: Record<string, WineDetails> = {
@@ -201,7 +201,8 @@ class WineApiService {
 // Default configuration - can be overridden
 const defaultConfig: WineApiConfig = {
   baseUrl: 'https://api.vivino.com/api/v2',
-  provider: 'vivino'
+  provider: 'vivino',
+  enabled: false
 };
 
 // Export singleton instance

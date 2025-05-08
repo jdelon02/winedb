@@ -1,46 +1,82 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Button } from 'react-bootstrap';
 
-interface Props {
-    children: ReactNode;
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
-interface State {
-    hasError: boolean;
-    error: Error | null;
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-    public state: State = {
-        hasError: false,
-        error: null
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
     };
+  }
 
-    public static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // You can also log the error to an error reporting service
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    this.setState({
+      error,
+      errorInfo
+    });
+  }
+
+  resetErrorBoundary = (): void => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
+  };
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      // Custom fallback UI
+      return this.props.fallback || (
+        <div className="error-boundary-container p-4 my-3 border rounded">
+          <Alert variant="danger">
+            <Alert.Heading>Something went wrong</Alert.Heading>
+            <p>The application encountered an unexpected error. Please try again or refresh the page.</p>
+            
+            <details className="mt-3 mb-3">
+              <summary>Error Details (for developers)</summary>
+              <pre className="mt-2 p-2 bg-light rounded">
+                {this.state.error?.toString() || 'Unknown error'}
+              </pre>
+              {this.state.errorInfo && (
+                <pre className="mt-2 p-2 bg-light rounded">
+                  {this.state.errorInfo.componentStack}
+                </pre>
+              )}
+            </details>
+            
+            <div className="d-flex justify-content-end">
+              <Button variant="outline-primary" onClick={this.resetErrorBoundary} aria-label="Try again">
+                Try again
+              </Button>
+            </div>
+          </Alert>
+        </div>
+      );
     }
 
-    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('Uncaught error:', error, errorInfo);
-    }
-
-    public render() {
-        if (this.state.hasError) {
-            return (
-                <Alert variant="danger" role="alert">
-                    <Alert.Heading>Something went wrong</Alert.Heading>
-                    <p>{this.state.error?.message}</p>
-                    <hr />
-                    <button 
-                        className="btn btn-outline-danger"
-                        onClick={() => this.setState({ hasError: false })}
-                    >
-                        Try again
-                    </button>
-                </Alert>
-            );
-        }
-
-        return this.props.children;
-    }
+    return this.props.children;
+  }
 }
+
+export default ErrorBoundary;

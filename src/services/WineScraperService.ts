@@ -62,7 +62,7 @@ export class WineScraperService {
         // Queue this request
         return this.requestQueue.then(async () => {
             const cacheKey = `scraper_${query}`;
-            const cached = await this.apiCache.get<MappedWineData>(cacheKey, 3600000); // 1 hour cache
+            const cached = await this.apiCache.get<MappedWineData>(cacheKey);
             if (cached) return cached;
 
             await this.login();
@@ -130,7 +130,7 @@ export class WineScraperService {
     public async scrapeDetails(url: string): Promise<MappedWineData | null> {
         return this.requestQueue.then(async () => {
             const cacheKey = `scraper_detail_${url}`;
-            const cached = await this.apiCache.get<MappedWineData>(cacheKey, 86400000); // 24 hour cache
+            const cached = await this.apiCache.get<MappedWineData>(cacheKey);
             if (cached) return cached;
 
             await this.login();

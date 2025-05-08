@@ -1,82 +1,209 @@
-import React, { useCallback, useState } from 'react';
-import { useWine } from '../contexts/WineContext';
-import { ErrorBoundary } from './ErrorBoundary';
-import { Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Form, Button, InputGroup, Alert, ButtonGroup } from 'react-bootstrap';
+import { useWineContext } from '../context/WineContext';
+import { Wine } from '../context/types';
+import CameraScanner from './CameraScanner';
 
-export const Scanner: React.FC = () => {
-    const { wineService, isLoading, error, clearError } = useWine();
-    const [input, setInput] = useState('');
+interface ScannerProps {
+  onScanComplete?: (wine: Wine) => void;
+}
 
-    const handleScan = useCallback(async (barcode: string) => {
-        try {
-            clearError();
-            await wineService.scanBarcode(barcode);
-            setInput('');
-        } catch (err) {
-            console.error('Scan error:', err);
+const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
+  const [barcode, setBarcode] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<'manual' | 'usb' | 'camera'>('usb'); // Add camera mode
+  const { wineService, refreshCollection } = useWineContext();
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const barcodeBuffer = useRef('');
+  const timeoutRef = useRef<number | null>(null);
+
+  // USB Barcode scanner detection and handling
+  useEffect(() => {
+    if (scanMode !== 'usb') return; // Only activate USB scanner in USB mode
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Detect if this is coming from a barcode scanner
+      // Barcode scanners usually send data rapidly with a final Enter key
+      if (e.key !== 'Enter') {
+        // Add character to buffer
+        barcodeBuffer.current += e.key;
+        
+        // Clear previous timeout
+        if (timeoutRef.current !== null) {
+          window.clearTimeout(timeoutRef.current);
         }
-    }, [wineService, clearError]);
-
-    const handleSubmit = useCallback((event: React.FormEvent) => {
-        event.preventDefault();
-        if (input.trim()) {
-            handleScan(input.trim());
+        
+        // Set new timeout - if no more keys within 50ms, consider it manual typing
+        timeoutRef.current = window.setTimeout(() => {
+          // If too slow between keystrokes, probably not a scanner
+          if (barcodeBuffer.current.length < 5) { // Arbitrary threshold
+            barcodeBuffer.current = '';
+          }
+        }, 50);
+      } else {
+        // Enter key pressed - process the complete barcode
+        if (barcodeBuffer.current.length > 0) {
+          processBarcode(barcodeBuffer.current);
+          barcodeBuffer.current = '';
+          e.preventDefault(); // Prevent form submission
         }
-    }, [input, handleScan]);
+      }
+    };
 
-    return (
-        <ErrorBoundary>
-            <Card className="mb-4">
-                <Card.Header>
-                    <h2>Wine Scanner</h2>
-                </Card.Header>
-                <Card.Body>
-                    <Form onSubmit={handleSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Label htmlFor="barcode-input">
-                                Scan or enter barcode
-                            </Form.Label>
-                            <Form.Control
-                                id="barcode-input"
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                disabled={isLoading}
-                                isInvalid={!!error}
-                                aria-describedby={error ? "scan-error" : undefined}
-                                placeholder="Enter barcode number..."
-                                autoFocus
-                            />
-                        </Form.Group>
-                        {error && (
-                            <Alert variant="danger" id="scan-error" onClose={clearError} dismissible>
-                                {error.message}
-                            </Alert>
-                        )}
-                        <Button 
-                            type="submit" 
-                            disabled={isLoading || !input.trim()}
-                            variant="primary"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Spinner
-                                        as="span"
-                                        animation="border"
-                                        size="sm"
-                                        role="status"
-                                        aria-hidden="true"
-                                        className="me-2"
-                                    />
-                                    Processing...
-                                </>
-                            ) : (
-                                'Add Wine'
-                            )}
-                        </Button>
-                    </Form>
-                </Card.Body>
-            </Card>
-        </ErrorBoundary>
-    );
+    // Handle scanner input
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Focus the input field
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [scanMode]);
+
+  // Process barcode data
+  const processBarcode = async (code: string) => {
+    if (!code || code.trim() === '') {
+      setError('Please enter a valid barcode');
+      return;
+    }
+
+    setBarcode(code);
+    setIsScanning(true);
+    setError(null);
+
+    try {
+      const wine = await wineService.scanBarcode(code);
+      
+      // Notify parent component
+      if (onScanComplete) {
+        onScanComplete(wine);
+      }
+
+      // Refresh collection
+      await refreshCollection();
+      
+      // Reset form
+      setBarcode('');
+      setIsScanning(false);
+      
+      // Reset barcodeBuffer
+      barcodeBuffer.current = '';
+      
+      // Focus input for next scan
+      if (inputRef.current && scanMode === 'manual') {
+        inputRef.current.focus();
+      }
+    } catch (err) {
+      console.error('Error scanning barcode:', err);
+      setError(err instanceof Error ? err.message : 'Failed to process barcode');
+      setIsScanning(false);
+    }
+  };
+
+  // Handle manual form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await processBarcode(barcode);
+  };
+
+  // Handle scan completion from camera
+  const handleCameraScanComplete = (wine: Wine) => {
+    if (onScanComplete) {
+      onScanComplete(wine);
+    }
+    // Switch back to USB mode after successful camera scan
+    setScanMode('usb');
+  };
+
+  return (
+    <div className="scanner-container" aria-live="polite">
+      <h2>Wine Scanner</h2>
+      
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      
+      <ButtonGroup className="mb-3 w-100">
+        <Button 
+          variant={scanMode === 'usb' ? 'primary' : 'outline-primary'}
+          onClick={() => setScanMode('usb')}
+          aria-pressed={scanMode === 'usb'}
+        >
+          USB Scanner
+        </Button>
+        <Button 
+          variant={scanMode === 'camera' ? 'primary' : 'outline-primary'}
+          onClick={() => setScanMode('camera')}
+          aria-pressed={scanMode === 'camera'}
+        >
+          Camera Scanner
+        </Button>
+        <Button 
+          variant={scanMode === 'manual' ? 'primary' : 'outline-primary'}
+          onClick={() => setScanMode('manual')}
+          aria-pressed={scanMode === 'manual'}
+        >
+          Manual Entry
+        </Button>
+      </ButtonGroup>
+      
+      {scanMode === 'manual' && (
+        <Form onSubmit={handleSubmit}>
+          <InputGroup className="mb-3">
+            <Form.Control
+              ref={inputRef}
+              type="text"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              placeholder="Enter barcode manually"
+              disabled={isScanning}
+              aria-label="Barcode input"
+            />
+            <Button 
+              variant="primary" 
+              type="submit" 
+              disabled={isScanning || !barcode} 
+              aria-label="Scan barcode"
+            >
+              {isScanning ? 'Processing...' : 'Scan'}
+            </Button>
+          </InputGroup>
+        </Form>
+      )}
+      
+      {scanMode === 'usb' && (
+        <div className="scanner-status mt-3" aria-live="polite">
+          <p>
+            Ready for USB scanner. Simply scan a barcode to begin.
+          </p>
+          <p className="text-muted">
+            <small>
+              The scanner will automatically detect and process barcodes from a USB barcode scanner.
+              No need to click any buttons.
+            </small>
+          </p>
+          {isScanning && <p>Scanning... Please wait.</p>}
+        </div>
+      )}
+      
+      {scanMode === 'camera' && (
+        <CameraScanner 
+          onScanComplete={handleCameraScanComplete} 
+          onClose={() => setScanMode('usb')} 
+        />
+      )}
+    </div>
+  );
 };
+
+export default Scanner;

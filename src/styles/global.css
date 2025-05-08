@@ -1,0 +1,80 @@
+:root {
+  --ios-background: #f2f2f7;
+  --ios-card-background: #ffffff;
+  --ios-primary: #007aff;
+  --ios-secondary: #5856d6;
+  --ios-success: #34c759;
+  --ios-shadow: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  background-color: var(--ios-background);
+  -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 4px 12px var(--ios-shadow);
+  margin-bottom: 20px;
+  background-color: var(--ios-card-background);
+}
+
+.card-header {
+  background: var(--ios-card-background);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+  padding: 20px;
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.card-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.btn {
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background-color: var(--ios-primary);
+  border-color: var(--ios-primary);
+}
+
+.form-control {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+}
+
+.spinner-border {
+  width: 20px;
+  height: 20px;
+}
+
+.toast {
+  border-radius: 16px;
+  box-shadow: 0 4px 12px var(--ios-shadow);
+  padding: 16px;
+  font-size: 0.9rem;
+}

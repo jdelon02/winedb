@@ -1,21 +1,26 @@
-interface CachedData<T> {
-  data: T;
-  timestamp: number;
-}
+import { CachedData } from '../types';
 
 export class ApiCacheService {
   private db: IDBDatabase | null = null;
   private readonly DB_NAME = 'WineApiCache';
   private readonly STORE_NAME = 'apiCache';
   private readonly DB_VERSION = 1;
+  private readonly cacheDuration: number;
+
+  constructor(cacheDuration?: number) {
+    this.cacheDuration = cacheDuration ?? (24 * 60 * 60 * 1000); // Use provided duration or 24 hours default
+  }
 
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
+      request.onerror = () => {
+        reject(new Error('Failed to open cache database'));
+      };
+
+      request.onsuccess = (event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
         resolve();
       };
 
@@ -28,80 +33,84 @@ export class ApiCacheService {
     });
   }
 
-  private ensureDb(): IDBDatabase {
+  async get<T>(key: string): Promise<T | null> {
     if (!this.db) {
       throw new Error('Cache database not initialized');
     }
-    return this.db;
-  }
 
-  async get<T>(key: string, maxAge: number): Promise<T | null> {
-    try {
-      if (!this.db) await this.initialize();
-      const db = this.ensureDb();
-      
-      const cached = await this.getFromStore<CachedData<T>>(key);
-      if (!cached) return null;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.STORE_NAME], 'readonly');
+      const store = transaction.objectStore(this.STORE_NAME);
+      const request = store.get(key);
 
-      const age = Date.now() - cached.timestamp;
-      if (age > maxAge) {
-        await this.delete(key);
-        return null;
-      }
+      request.onerror = () => reject(new Error('Failed to read from cache'));
 
-      return cached.data;
-    } catch (error) {
-      console.error('Cache retrieval error:', error);
-      return null;
-    }
+      request.onsuccess = () => {
+        const result = request.result as CachedData<T>;
+        if (!result) {
+          resolve(null);
+          return;
+        }
+
+        if (Date.now() - result.timestamp > this.cacheDuration) {
+          // Cache expired, remove it and return null
+          this.delete(key).catch(console.error);
+          resolve(null);
+          return;
+        }
+
+        resolve(result.data);
+      };
+    });
   }
 
   async set<T>(key: string, data: T): Promise<void> {
-    if (!this.db) await this.initialize();
-    
-    const cacheEntry: CachedData<T> = {
+    if (!this.db) {
+      throw new Error('Cache database not initialized');
+    }
+
+    const cacheData: CachedData<T> = {
+      key,
       data,
       timestamp: Date.now()
     };
 
-    return this.setInStore(key, cacheEntry);
-  }
-
-  private getFromStore<T>(key: string): Promise<T | null> {
-    const db = this.ensureDb();
-
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(this.STORE_NAME, 'readonly');
+      const transaction = this.db!.transaction([this.STORE_NAME], 'readwrite');
       const store = transaction.objectStore(this.STORE_NAME);
-      const request = store.get(key);
+      const request = store.put(cacheData);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || null);
-    });
-  }
-
-  private setInStore<T>(key: string, value: T): Promise<void> {
-    const db = this.ensureDb();
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(this.STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(this.STORE_NAME);
-      const request = store.put({ key, ...value });
-
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(new Error('Failed to write to cache'));
       request.onsuccess = () => resolve();
     });
   }
 
-  private async delete(key: string): Promise<void> {
-    const db = this.ensureDb();
+  async delete(key: string): Promise<void> {
+    if (!this.db) {
+      throw new Error('Cache database not initialized');
+    }
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(this.STORE_NAME, 'readwrite');
+      const transaction = this.db!.transaction([this.STORE_NAME], 'readwrite');
       const store = transaction.objectStore(this.STORE_NAME);
       const request = store.delete(key);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(new Error('Failed to delete from cache'));
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  async clear(): Promise<void> {
+    if (!this.db) {
+      throw new Error('Cache database not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([this.STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(this.STORE_NAME);
+      const request = store.clear();
+
+      request.onerror = () => reject(new Error('Failed to clear cache'));
       request.onsuccess = () => resolve();
     });
   }

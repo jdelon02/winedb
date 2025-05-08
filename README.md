@@ -1,106 +1,143 @@
-# Wine Collection Manager
+# Wine Collection App
 
-A React TypeScript application for managing your wine collection with barcode scanning support.
+A React-based application for scanning, cataloging, and managing your wine collection.
 
 ## Features
 
-- Barcode scanning with Symcode USB scanner support
-- Manual barcode entry fallback
-- Offline-first with IndexedDB storage
-- Wine details lookup via multiple APIs:
-  - Open Food Facts API (free)
-  - Wine-Searcher API (paid subscription)
-  - Global Wine Score API (requires API key)
-- Auto-refreshing wine collection view
-- Detailed wine information pages
-- Toast notifications for collection updates
-- WCAG 2.1 Level AA compliant
-- Responsive design for mobile and desktop
+- **Multi-mode Barcode Scanning**:
+  - USB barcode scanner support
+  - Camera-based scanning using device cameras
+  - Manual barcode entry
+  
+- **Inventory Management**:
+  - Track multiple bottles of the same wine with quantity counter
+  - One-click consumption tracking to decrease quantity
+  - Auto-increment quantity when scanning existing wines
+  - Smart handling of last bottle consumption
+  
+- **Local Storage**:
+  - Store your entire wine collection on your device
+  - No internet connection required for core functionality
+  - IndexedDB for efficient local data storage
 
-## Requirements
+- **Collection Management**:
+  - View your full wine collection
+  - Search and filter wines by name, producer, or varietal
+  - Add, edit, and delete wine entries
+  - Track wine details including vintage, producer, and rating
 
-- Node.js 16+
-- npm 7+
-- Symcode USB Barcode Scanner (optional)
-- API keys for premium wine data (optional)
+- **Responsive Design**:
+  - Works on desktop, tablet, and mobile devices
+  - Optimized for touch interfaces and keyboard input
 
-## Setup
+## Technical Implementation
 
-```bash
-# Install dependencies
-npm install
-
-# Copy environment template
-cp .env.example .env
-
-# Configure API keys (optional)
-# Edit .env with your API keys
-
-# Start development server
-npm start
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-```
-
-## Development
-
-- Written in TypeScript with React 18+
-- Uses Context API for state management
-- IndexedDB for offline storage
+- Built with React 18+ and TypeScript
 - React Router for navigation
-- Full WCAG 2.1 Level AA compliance
+- React Bootstrap for responsive UI components
+- Context API for state management
+- IndexedDB for local storage
+- QuaggaJS for camera-based barcode scanning
 
-## Project Structure
+## Camera Scanning
 
+The app features advanced camera-based barcode scanning using the QuaggaJS library:
+
+- Multi-camera support with automatic device detection
+- Rear camera preference for mobile devices
+- Confidence tracking algorithm to ensure accurate scans
+- User-friendly viewfinder with targeting rectangle
+- Support for common wine barcode formats (EAN-13, UPC-A, etc.)
+- Comprehensive permission and error handling
+
+## Inventory Management
+
+The app features practical inventory management capabilities:
+
+- **Quantity Tracking**: Keep count of how many bottles you have of each wine
+- **Automatic Detection**: When scanning a wine that's already in your collection, quantity is automatically incremented
+- **Quick Consumption**: Mark bottles as consumed with one click from the wine list or detail page
+- **Smart Last Bottle Handling**: When consuming the last bottle, you'll be prompted to keep or remove the wine from your collection
+- **Visual Indicators**: Quantity badges show bottle counts at a glance
+- **Intuitive Editing**: Easily adjust quantities with increment/decrement buttons in edit mode
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 14+ and npm
+- Modern web browser with camera access (for scanning feature)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/wine-collection-app.git
+cd wine-collection-app
 ```
-src/
-  components/      # React components
-  contexts/        # React contexts
-  db/             # IndexedDB storage
-  repositories/    # Data models
-  services/       # Business logic
-  utils/          # Helper functions
-  icons/          # SVG icons
-  styles/         # CSS styles
+
+2. Install dependencies:
+```bash
+npm install
 ```
 
-## Features in Detail
+3. Start the development server:
+```bash
+npm start
+```
 
-### Wine Collection
-- Auto-refreshes every 30 seconds
-- Manual refresh button
-- Clickable wine cards
-- Detailed wine view pages
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Barcode Scanning
-- USB scanner support
-- Manual entry fallback
-- Automatic wine data lookup
-- Local caching of results
+## Usage
 
-### API Integration
-- Multi-tier wine data lookup
-- Configurable API providers
-- Automatic fallback to free API
-- Response caching
+### Scanning a Wine Bottle
 
-### Storage
-- Offline-first approach
-- IndexedDB for persistence
-- Automatic data sync
-- Error recovery
+1. Navigate to the main page
+2. Choose your preferred scanning method:
+   - **USB Scanner**: Simply scan a barcode with your USB scanner
+   - **Camera Scanner**: Click "Camera Scanner" and position the barcode in the highlighted area
+   - **Manual Entry**: Click "Manual Entry" and type the barcode number
+
+3. After scanning, the wine details page will open where you can edit information
+
+### Managing Your Inventory
+
+- **View Quantity**: Each wine card shows how many bottles you have with a badge
+- **Consume a Bottle**: Click the "-1" button on any wine card to mark a bottle as consumed
+- **Add More Bottles**: Either scan the same barcode again or use the "Add Another" button on the detail page
+- **Adjust Quantity**: On the wine details page, click "Edit" to manually adjust the quantity
+
+### Managing Your Collection
+
+- **View Collection**: The home page displays all wines in your collection
+- **Search**: Use the search box to filter by name, producer, or varietal
+- **Edit Wine**: Click on any wine to view details and make changes
+- **Delete Wine**: On the wine details page, click "Delete" to remove it from your collection
+
+## Browser Support
+
+The application works best on:
+- Chrome 83+
+- Firefox 76+
+- Safari 13.1+
+- Edge 83+
+
+Camera scanning requires a browser with WebRTC support and camera access.
+
+## Privacy
+
+Your data never leaves your device. All wine information is stored locally in your browser's IndexedDB.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Follow the coding guidelines in .github/copilot-instructions.md
-4. Submit a pull request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- [QuaggaJS](https://github.com/serratus/quaggaJS) for barcode scanning functionality
+- [React Bootstrap](https://react-bootstrap.github.io/) for UI components
+- [React Router](https://reactrouter.com/) for navigation
