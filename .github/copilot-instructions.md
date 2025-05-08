@@ -9,6 +9,8 @@ The Wine Collection App allows users to:
 - Store wine details locally using IndexedDB
 - Fetch wine information from external APIs when available
 - View, edit, and manage their wine collection
+- Record tasting notes and vineyard information for each wine
+- Add quick reviews directly from the wine list view
 
 ## Technical Stack
 
@@ -25,6 +27,7 @@ The Wine Collection App allows users to:
 - **CameraScanner**: Provides camera-based barcode scanning using QuaggaJS
 - **WineList**: Displays the collection with search and auto-refresh
 - **WineDetail**: Shows and edits individual wine details
+- **QuickReviewModal**: Provides a quick way to add or update tasting notes
 - **WineService**: Manages database operations and API integration
 - **WineContext**: Provides state management across the application
 - **ErrorBoundary**: Handles component-level errors
@@ -74,22 +77,30 @@ Here are some areas where GitHub Copilot can assist with enhancements:
    - Implement drink-by date recommendations
    - Add purchase price and valuation tracking
 
-3. **API Integration**:
+3. **Wine Information Management**:
+   - ✅ Tasting notes with rating, aroma, taste, and finish characteristics
+   - ✅ Quick review system accessible from the wine list
+   - ✅ Vineyard information including owner, location, and history
+   - Add wine region and classification information
+   - Implement vintage tracking and aging recommendations
+   - Add label photo capture and storage
+
+4. **API Integration**:
    - Extend the tiered API approach with additional wine data sources
    - Implement more sophisticated caching strategies
    - Add wine image retrieval capabilities
 
-4. **Data Visualization**:
+5. **Data Visualization**:
    - Create charts and graphs for wine collection analytics
-   - Visualize wine ratings and vintages
+   - ✅ Visualize wine ratings with star displays
    - Implement comparison features
 
-5. **Offline Capabilities**:
+6. **Offline Capabilities**:
    - Enhance offline functionality
    - Implement background sync for operations when connection is restored
    - Add export/import functionality for backup
 
-6. **Testing**:
+7. **Testing**:
    - Add Jest/React Testing Library tests
    - Implement E2E tests with Cypress
    - Create mock service workers for API testing
@@ -114,6 +125,7 @@ src/
 ├── components/      # React components
 │   ├── CameraScanner.tsx  # Camera-based barcode scanner
 │   ├── ErrorBoundary.tsx
+│   ├── QuickReviewModal.tsx  # Modal for adding wine reviews quickly
 │   ├── Scanner.tsx
 │   ├── WineDetail.tsx
 │   └── WineList.tsx
@@ -122,7 +134,7 @@ src/
 ├── services/        # Service classes
 │   └── WineService.ts
 ├── types/           # TypeScript interfaces
-│   ├── index.ts
+│   ├── index.ts     # Contains TastingNotes and VineyardInfo interfaces
 │   └── quagga.d.ts  # Type definitions for QuaggaJS
 ├── App.tsx          # Main application component
 ├── App.css          # Application styles
@@ -153,6 +165,37 @@ The application now includes inventory management features for tracking multiple
 
 These features make the app more practical for real-world use, allowing users to maintain an accurate inventory with minimal effort.
 
+## Tasting Notes and Vineyard Information
+
+The application now includes comprehensive wine information management:
+
+- **Tasting Notes**: Track detailed tasting experiences with:
+  - Star ratings (1-5) for wine quality
+  - Tasting date record
+  - Aroma, taste, and finish characteristics
+  - Overall notes and impressions
+  - Food pairing suggestions
+
+- **Quick Review System**:
+  - Add or update reviews directly from the wine list
+  - Interactive star rating system
+  - Simplified form for capturing key impressions
+  - Reviews display prominently in wine cards
+
+- **Vineyard Information**:
+  - Track vineyard name, owner, and location
+  - Record vineyard history and founding year
+  - Store vineyard description and background story
+  - Link to vineyard website
+
+- **Enhanced Wine List Display**:
+  - Star ratings displayed prominently on wine cards
+  - Preview of tasting notes on each wine card
+  - Vineyard information displayed when available
+  - Tasting date shown alongside ratings
+
+The database has been upgraded to version 2 to support these new data structures, with appropriate migration paths for existing data.
+
 ## API Integration
 
 The application uses a tiered approach to API integration:
@@ -170,6 +213,7 @@ The application uses two IndexedDB databases:
 1. **WineCollectionDB**: Stores the user's wine collection
    - Object Store: `wines`
    - Indexes: `barcode`, `updated_at`
+   - Schema version: 2 (upgraded to support tasting notes and vineyard info)
 
 2. **WineApiCache**: Caches API responses
    - Object Store: `apiCache`

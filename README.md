@@ -1,79 +1,32 @@
 # Wine Collection App
 
-A React-based application for scanning, cataloging, and managing your wine collection.
+A React application for wine enthusiasts to track their collection, record tasting notes, and manage wine inventory.
 
 ## Features
 
-- **Multi-mode Barcode Scanning**:
-  - USB barcode scanner support
-  - Camera-based scanning using device cameras
-  - Manual barcode entry
-  
-- **Inventory Management**:
-  - Track multiple bottles of the same wine with quantity counter
-  - One-click consumption tracking to decrease quantity
-  - Auto-increment quantity when scanning existing wines
-  - Smart handling of last bottle consumption
-  
-- **Local Storage**:
-  - Store your entire wine collection on your device
-  - No internet connection required for core functionality
-  - IndexedDB for efficient local data storage
-
-- **Collection Management**:
-  - View your full wine collection
-  - Search and filter wines by name, producer, or varietal
-  - Add, edit, and delete wine entries
-  - Track wine details including vintage, producer, and rating
-
-- **Responsive Design**:
-  - Works on desktop, tablet, and mobile devices
-  - Optimized for touch interfaces and keyboard input
-
-## Technical Implementation
-
-- Built with React 18+ and TypeScript
-- React Router for navigation
-- React Bootstrap for responsive UI components
-- Context API for state management
-- IndexedDB for local storage
-- QuaggaJS for camera-based barcode scanning
-
-## Camera Scanning
-
-The app features advanced camera-based barcode scanning using the QuaggaJS library:
-
-- Multi-camera support with automatic device detection
-- Rear camera preference for mobile devices
-- Confidence tracking algorithm to ensure accurate scans
-- User-friendly viewfinder with targeting rectangle
-- Support for common wine barcode formats (EAN-13, UPC-A, etc.)
-- Comprehensive permission and error handling
-
-## Inventory Management
-
-The app features practical inventory management capabilities:
-
-- **Quantity Tracking**: Keep count of how many bottles you have of each wine
-- **Automatic Detection**: When scanning a wine that's already in your collection, quantity is automatically incremented
-- **Quick Consumption**: Mark bottles as consumed with one click from the wine list or detail page
-- **Smart Last Bottle Handling**: When consuming the last bottle, you'll be prompted to keep or remove the wine from your collection
-- **Visual Indicators**: Quantity badges show bottle counts at a glance
-- **Intuitive Editing**: Easily adjust quantities with increment/decrement buttons in edit mode
+- **Barcode Scanning**: Add wines via USB barcode scanner, camera, or manual entry
+- **Collection Management**: View, edit, and manage your personal wine collection
+- **Inventory Tracking**: Keep track of multiple bottles with quantity counters
+- **Quick Consumption**: One-click consumption tracking
+- **Tasting Notes**: Record your wine tasting experiences with ratings and detailed notes
+- **Quick Review System**: Add reviews directly from the wine list with an intuitive star rating system
+- **Vineyard Information**: Store details about vineyards including location, ownership, and history
+- **Offline First**: Works with or without an internet connection
+- **Progressive Web App**: Install on your device for a native-like experience
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 14+ and npm
-- Modern web browser with camera access (for scanning feature)
+- Node.js 16 or higher
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/wine-collection-app.git
-cd wine-collection-app
+git clone https://github.com/yourusername/winedb.git
+cd winedb
 ```
 
 2. Install dependencies:
@@ -90,43 +43,54 @@ npm start
 
 ## Usage
 
-### Scanning a Wine Bottle
+### Adding a Wine
 
-1. Navigate to the main page
-2. Choose your preferred scanning method:
-   - **USB Scanner**: Simply scan a barcode with your USB scanner
-   - **Camera Scanner**: Click "Camera Scanner" and position the barcode in the highlighted area
-   - **Manual Entry**: Click "Manual Entry" and type the barcode number
-
-3. After scanning, the wine details page will open where you can edit information
-
-### Managing Your Inventory
-
-- **View Quantity**: Each wine card shows how many bottles you have with a badge
-- **Consume a Bottle**: Click the "-1" button on any wine card to mark a bottle as consumed
-- **Add More Bottles**: Either scan the same barcode again or use the "Add Another" button on the detail page
-- **Adjust Quantity**: On the wine details page, click "Edit" to manually adjust the quantity
+1. Use the scanner at the top of the home page to scan a wine barcode
+2. The app will attempt to identify the wine or create a new entry
+3. Edit the wine details as needed
 
 ### Managing Your Collection
 
-- **View Collection**: The home page displays all wines in your collection
-- **Search**: Use the search box to filter by name, producer, or varietal
-- **Edit Wine**: Click on any wine to view details and make changes
-- **Delete Wine**: On the wine details page, click "Delete" to remove it from your collection
+- **View Wines**: Browse and search your collection on the home page
+- **Edit Details**: Click on any wine to view and edit its details
+- **Consume Wine**: Click "Consume" to decrease the quantity by one
+- **Add Review**: Use the "Add Review" button to quickly rate and review a wine
+- **Delete Wine**: Remove wines from your collection when needed
 
-## Browser Support
+### Recording Tasting Notes
 
-The application works best on:
-- Chrome 83+
-- Firefox 76+
-- Safari 13.1+
-- Edge 83+
+1. Click "Add Review" on a wine card or open the wine details and go to the "Tasting Notes" tab
+2. Record the tasting date and rating (1-5 stars)
+3. Add notes about aroma, taste, finish, and food pairings
+4. Save your review
 
-Camera scanning requires a browser with WebRTC support and camera access.
+### Storing Vineyard Information
 
-## Privacy
+1. Open a wine's details
+2. Go to the "Vineyard Info" tab
+3. Add information about the vineyard, its location, owner, and story
+4. Save your changes
 
-Your data never leaves your device. All wine information is stored locally in your browser's IndexedDB.
+## Technologies
+
+- React
+- TypeScript
+- IndexedDB
+- React Bootstrap
+- React Router
+- QuaggaJS (for barcode scanning)
+
+## Project Structure
+
+```
+src/
+├── components/      # React components
+├── context/         # Context providers
+├── services/        # Service classes
+├── types/           # TypeScript interfaces
+├── App.tsx          # Main application component
+└── index.tsx        # Application entry point
+```
 
 ## Contributing
 
@@ -138,6 +102,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [QuaggaJS](https://github.com/serratus/quaggaJS) for barcode scanning functionality
-- [React Bootstrap](https://react-bootstrap.github.io/) for UI components
-- [React Router](https://reactrouter.com/) for navigation
+- React team for the amazing framework
+- QuaggaJS for barcode scanning capabilities
+- React Bootstrap for UI components
