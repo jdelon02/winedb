@@ -1,0 +1,78 @@
+@startuml Recipe Management Components
+
+package "Pages" {
+  [RecipesPage]
+  [RecipeDetailPage]
+  [RecipeCreatePage]
+  [RecipeEditPage]
+}
+
+package "Components" {
+  package "Recipe" {
+    [RecipeList]
+    [RecipeCard]
+    [RecipeForm]
+    [RecipeSteps]
+    [RecipeIngredients]
+    [RecipeImages]
+    [RecipeTags]
+  }
+  
+  package "Common" {
+    [ImageUpload]
+    [TagSelect]
+    [RatingStars]
+    [Comments]
+    [Select2Input]
+  }
+  
+  package "Forms" {
+    [JsonSchemaForm]
+    [FormArrayField]
+    [FormImageField]
+    [FormValidation]
+  }
+}
+
+package "Services" {
+  [RecipeService]
+  [ImageService]
+  [TagService]
+}
+
+package "State" {
+  [RecipeContext]
+  [AuthContext]
+  [UIContext]
+}
+
+' Page relationships
+[RecipesPage] --> [RecipeList]
+[RecipeDetailPage] --> [RecipeCard]
+[RecipeCreatePage] --> [RecipeForm]
+[RecipeEditPage] --> [RecipeForm]
+
+' Component relationships
+[RecipeForm] --> [RecipeSteps]
+[RecipeForm] --> [RecipeIngredients]
+[RecipeForm] --> [RecipeImages]
+[RecipeForm] --> [RecipeTags]
+[RecipeForm] --> [JsonSchemaForm]
+
+[RecipeSteps] --> [FormArrayField]
+[RecipeImages] --> [ImageUpload]
+[RecipeTags] --> [TagSelect]
+[RecipeIngredients] --> [Select2Input]
+
+' Service relationships
+[RecipeForm] --> [RecipeService]
+[RecipeImages] --> [ImageService]
+[RecipeTags] --> [TagService]
+
+' State relationships
+[RecipeForm] --> [RecipeContext]
+[RecipeForm] --> [AuthContext]
+[RecipeList] --> [RecipeContext]
+[RecipeCard] --> [UIContext]
+
+@enduml

@@ -1,0 +1,195 @@
+models:
+  User:
+    id: id
+    name: string
+    email: string unique
+    email_verified_at: timestamp nullable
+    password: string
+    remember_token: string nullable
+    profile_image: string nullable
+    bio: text nullable
+    preferences: json nullable
+    timestamps: true
+    relationships:
+      hasMany: Recipe, Wine, Rating, Review, Comment
+      belongsToMany: User:followers, Group
+
+  Recipe:
+    id: id
+    user_id: id foreign
+    title: string
+    description: text
+    prep_time: integer
+    cook_time: integer
+    servings: integer
+    difficulty_level: string
+    featured_image: string nullable
+    status: string default:draft
+    timestamps: true
+    softDeletes: true
+    relationships:
+      belongsTo: User
+      hasMany: RecipeStep, RecipeImage, Rating, Review, Comment
+      belongsToMany: Tag, Ingredient
+
+  RecipeStep:
+    id: id
+    recipe_id: id foreign
+    step_number: integer
+    instruction: text
+    image: string nullable
+    timestamps: true
+    relationships:
+      belongsTo: Recipe
+
+  Wine:
+    id: id
+    user_id: id foreign
+    name: string
+    description: text
+    year: integer nullable
+    producer: string
+    country: string
+    region: string nullable
+    featured_image: string nullable
+    status: string default:draft
+    timestamps: true
+    softDeletes: true
+    relationships:
+      belongsTo: User
+      hasMany: WineImage, Rating, Review, Comment, TastingNote
+      belongsToMany: Tag, Varietal, Classification
+
+  Ingredient:
+    id: id
+    name: string unique
+    description: text nullable
+    timestamps: true
+    relationships:
+      belongsToMany: Recipe
+
+  RecipeIngredient:
+    id: id
+    recipe_id: id foreign
+    ingredient_id: id foreign
+    quantity: decimal
+    unit: string
+    notes: text nullable
+    timestamps: true
+    relationships:
+      belongsTo: Recipe, Ingredient
+
+  Varietal:
+    id: id
+    name: string unique
+    description: text nullable
+    timestamps: true
+    relationships:
+      belongsToMany: Wine
+
+  Classification:
+    id: id
+    name: string unique
+    description: text nullable
+    timestamps: true
+    relationships:
+      belongsToMany: Wine
+
+  TastingNote:
+    id: id
+    wine_id: id foreign
+    user_id: id foreign
+    notes: text
+    tasted_at: timestamp
+    timestamps: true
+    relationships:
+      belongsTo: Wine, User
+
+  Rating:
+    id: id
+    user_id: id foreign
+    rateable_id: id
+    rateable_type: string
+    rating: integer
+    timestamps: true
+    relationships:
+      belongsTo: User
+      morphTo: rateable
+
+  Review:
+    id: id
+    user_id: id foreign
+    reviewable_id: id
+    reviewable_type: string
+    title: string
+    content: text
+    timestamps: true
+    relationships:
+      belongsTo: User
+      morphTo: reviewable
+
+  Comment:
+    id: id
+    user_id: id foreign
+    commentable_id: id
+    commentable_type: string
+    content: text
+    timestamps: true
+    relationships:
+      belongsTo: User
+      morphTo: commentable
+
+  Tag:
+    id: id
+    name: string unique
+    type: string nullable
+    timestamps: true
+    relationships:
+      belongsToMany: Recipe, Wine
+
+  Group:
+    id: id
+    name: string
+    description: text nullable
+    creator_id: id foreign
+    status: string default:active
+    timestamps: true
+    relationships:
+      belongsTo: User:creator
+      belongsToMany: User
+
+  ShoppingList:
+    id: id
+    user_id: id foreign
+    name: string
+    description: text nullable
+    timestamps: true
+    relationships:
+      belongsTo: User
+      hasMany: ShoppingListItem
+
+  ShoppingListItem:
+    id: id
+    shopping_list_id: id foreign
+    ingredient_id: id foreign nullable
+    wine_id: id foreign nullable
+    quantity: decimal nullable
+    unit: string nullable
+    notes: text nullable
+    checked: boolean default:false
+    timestamps: true
+    relationships:
+      belongsTo: ShoppingList, Ingredient, Wine
+
+  Message:
+    id: id
+    sender_id: id foreign
+    recipient_id: id foreign
+    subject: string nullable
+    content: text
+    read_at: timestamp nullable
+    timestamps: true
+    relationships:
+      belongsTo: User:sender, User:recipient
+
+seeders: User, Tag, Ingredient, Varietal, Classification

@@ -1,0 +1,59 @@
+@startuml Advanced Features Implementation Flow
+
+skinparam {
+  ArrowColor #2C3E50
+  ArrowFontColor #2C3E50
+  ArrowFontSize 12
+  ArrowThickness 2
+}
+
+' Social Features
+rectangle "User Following" as Following #ABEBC6
+rectangle "Messaging System" as Messaging #ABEBC6
+rectangle "Groups" as Groups #ABEBC6
+
+' Recipe Advanced Features
+rectangle "Recipe Recommendations" as RecipeRec #AED6F1
+rectangle "Recipe Collections" as RecipeColl #AED6F1
+rectangle "Recipe Versioning" as RecipeVer #AED6F1
+
+' Wine Advanced Features
+rectangle "Wine Pairing" as WinePair #D2B4DE
+rectangle "Wine Collections" as WineColl #D2B4DE
+rectangle "Wine Knowledge Base" as WineKB #D2B4DE
+
+' Shopping & Planning
+rectangle "Shopping Lists" as Shopping #FAD7A0
+rectangle "Meal Planning" as MealPlan #FAD7A0
+rectangle "Inventory Management" as Inventory #FAD7A0
+
+' External Services
+cloud "Email Service" as Email #F5B7B1
+cloud "Search Service" as Search #F5B7B1
+cloud "Payment Service" as Payment #F5B7B1
+
+' Dependencies
+Following --> RecipeRec
+Following --> WinePair
+Following --> Email
+
+Messaging --> Groups
+Groups --> RecipeColl
+Groups --> WineColl
+
+RecipeRec --> MealPlan
+WinePair --> MealPlan
+RecipeColl --> Shopping
+WineColl --> Shopping
+
+Shopping --> Inventory
+MealPlan --> Inventory
+
+WineKB --> WinePair
+RecipeVer --> RecipeColl
+
+Search --> RecipeRec
+Search --> WinePair
+Payment --> [Groups]
+
+@enduml

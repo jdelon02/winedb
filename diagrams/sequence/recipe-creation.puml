@@ -1,0 +1,30 @@
+@startuml Recipe Creation Sequence
+
+actor User
+participant "Frontend" as FE
+participant "API" as API
+participant "RecipeController" as RC
+participant "IngredientController" as IC
+database "Database" as DB
+
+User -> FE: Navigate to Create Recipe
+FE -> API: GET /api/ingredients
+API -> DB: Query ingredients
+DB --> API: Return ingredients list
+API --> FE: Return ingredients for dropdown
+
+User -> FE: Fill recipe form
+User -> FE: Add ingredients
+FE -> API: POST /api/recipes
+API -> RC: Create recipe
+RC -> DB: Save recipe
+DB --> RC: Return saved recipe
+RC -> IC: Add ingredients
+IC -> DB: Save recipe ingredients
+DB --> IC: Return success
+IC --> RC: Return success
+RC --> API: Return complete recipe
+API --> FE: Return success response
+FE --> User: Show success message
+
+@enduml

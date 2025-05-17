@@ -1,0 +1,46 @@
+@startuml Shopping List Creation
+
+actor User
+participant "Frontend" as FE
+participant "API" as API
+participant "ShoppingListController" as SLC
+participant "RecipeService" as RS
+database "Database" as DB
+
+User -> FE: Create shopping list
+FE -> API: POST /api/shopping-lists
+API -> SLC: Create list
+SLC -> DB: Save list
+DB --> SLC: Return new list
+SLC --> API: Return list
+API --> FE: Show empty list
+
+User -> FE: Add recipe to list
+FE -> API: POST /api/shopping-lists/{id}/recipes/{recipe_id}
+API -> SLC: Process recipe
+SLC -> RS: Get recipe ingredients
+RS -> DB: Query recipe
+DB --> RS: Return recipe data
+RS --> SLC: Return ingredients
+SLC -> DB: Add items to list
+DB --> SLC: Return updated list
+SLC --> API: Return success
+API --> FE: Update display
+
+User -> FE: Add wine to list
+FE -> API: POST /api/shopping-lists/{id}/wines/{wine_id}
+API -> SLC: Process wine
+SLC -> DB: Add wine to list
+DB --> SLC: Return updated list
+SLC --> API: Return success
+API --> FE: Update display
+
+User -> FE: Edit quantities
+FE -> API: PUT /api/shopping-lists/{id}/items/{item_id}
+API -> SLC: Update item
+SLC -> DB: Save changes
+DB --> SLC: Return updated item
+SLC --> API: Return success
+API --> FE: Update display
+
+@enduml

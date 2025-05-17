@@ -1,0 +1,77 @@
+models:
+  Group:
+    id: id
+    name: string
+    description: text nullable
+    creator_id: id foreign:users
+    image: string nullable
+    settings: json nullable
+    timestamps: true
+    softDeletes: true
+    relationships:
+      belongsTo: User:creator
+      belongsToMany: User
+
+  ShoppingList:
+    id: id
+    user_id: id foreign
+    name: string
+    description: text nullable
+    status: string default:active
+    timestamps: true
+    softDeletes: true
+    relationships:
+      belongsTo: User
+      hasMany: ShoppingListItem
+
+  ShoppingListItem:
+    id: id
+    shopping_list_id: id foreign
+    ingredient_id: id foreign nullable
+    name: string
+    quantity: decimal nullable
+    unit: string nullable
+    note: text nullable
+    is_checked: boolean default:false
+    timestamps: true
+    relationships:
+      belongsTo: ShoppingList, Ingredient
+
+  Activity:
+    id: id
+    user_id: id foreign
+    type: string
+    subject_type: string
+    subject_id: id
+    data: json nullable
+    timestamps: true
+    relationships:
+      belongsTo: User
+
+  Notification:
+    id: id
+    type: string
+    notifiable_type: string
+    notifiable_id: id
+    data: json
+    read_at: timestamp nullable
+    timestamps: true
+
+  UserFollower:
+    id: id
+    user_id: id foreign
+    follower_id: id foreign
+    timestamps: true
+    relationships:
+      belongsTo: User, User:follower
+
+  Message:
+    id: id
+    sender_id: id foreign:users
+    recipient_id: id foreign:users
+    content: text
+    read_at: timestamp nullable
+    timestamps: true
+    softDeletes: true
+    relationships:
+      belongsTo: User:sender, User:recipient

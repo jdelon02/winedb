@@ -1,0 +1,72 @@
+policies:
+  RecipePolicy:
+    view:
+      allow: true
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  WinePolicy:
+    view:
+      allow: true
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  TastingNotePolicy:
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  RatingPolicy:
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  ReviewPolicy:
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  CommentPolicy:
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  ShoppingListPolicy:
+    view:
+      allow: auth and user_id is auth.id
+    create:
+      allow: auth
+    update:
+      allow: auth and user_id is auth.id
+    delete:
+      allow: auth and user_id is auth.id
+
+  GroupPolicy:
+    view:
+      allow: true
+    create:
+      allow: auth
+    update:
+      allow: auth and creator_id is auth.id
+    delete:
+      allow: auth and creator_id is auth.id

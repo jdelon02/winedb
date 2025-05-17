@@ -1,0 +1,37 @@
+@startuml Wine Rating and Review Workflow
+
+actor User
+participant "Frontend" as FE
+participant "API" as API
+participant "RatingController" as RC
+participant "ReviewController" as RVC
+participant "NotificationService" as NS
+database "Database" as DB
+
+User -> FE: View wine details
+FE -> API: GET /api/wines/{id}
+API -> DB: Query wine with ratings
+DB --> API: Return wine data
+API --> FE: Display wine details
+
+User -> FE: Submit rating
+FE -> API: POST /api/wines/{id}/rate
+API -> RC: Handle rating
+RC -> DB: Save rating
+DB --> RC: Return updated rating
+RC -> NS: Notify wine owner
+NS --> DB: Save notification
+RC --> API: Return success
+API --> FE: Update display
+
+User -> FE: Submit review
+FE -> API: POST /api/wines/{id}/review
+API -> RVC: Handle review
+RVC -> DB: Save review
+DB --> RVC: Return saved review
+RVC -> NS: Notify wine owner
+NS --> DB: Save notification
+RVC --> API: Return success
+API --> FE: Update display
+
+@enduml

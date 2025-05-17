@@ -1,0 +1,55 @@
+@startuml Testing Workflow
+
+skinparam {
+  ArrowColor #2C3E50
+  ArrowFontColor #2C3E50
+  ArrowFontSize 12
+  ArrowThickness 2
+}
+
+rectangle "Development" as Dev #ABEBC6 {
+  [Write Code] as Code
+  [Write Tests] as Tests
+  [Local Testing] as Local
+}
+
+rectangle "Continuous Integration" as CI #AED6F1 {
+  [Static Analysis] as Static
+  [Unit Tests] as Unit
+  [Integration Tests] as Integration
+  [E2E Tests] as E2E
+}
+
+rectangle "Quality Gates" as QA #F5B7B1 {
+  [Code Coverage] as Coverage
+  [Performance Tests] as Perf
+  [Security Scan] as Security
+}
+
+rectangle "Documentation" as Doc #FAD7A0 {
+  [API Docs] as API
+  [Component Docs] as Comp
+  [User Guides] as Guide
+}
+
+' Development Flow
+Code --> Tests : Write tests for new code
+Tests --> Local : Run tests locally
+Local --> Static : Push to CI
+
+' CI Flow
+Static --> Unit : Pass static analysis
+Unit --> Integration : Pass unit tests
+Integration --> E2E : Pass integration tests
+E2E --> Coverage : Pass E2E tests
+
+' Quality Gates
+Coverage --> Perf : Meet coverage threshold
+Perf --> Security : Pass performance tests
+Security --> [API] : Pass security scan
+
+' Documentation Flow
+[API] --> Comp : Update API docs
+Comp --> Guide : Update component docs
+
+@enduml

@@ -1,0 +1,110 @@
+tests:
+  Feature/Auth:
+    test_user_can_register:
+      post: /api/auth/register with valid data
+      assert: 201 status
+      assert: database has user
+      assert: response has token
+
+    test_user_can_login:
+      post: /api/auth/login with credentials
+      assert: 200 status
+      assert: response has token
+
+    test_user_can_logout:
+      auth: as user
+      post: /api/auth/logout
+      assert: 204 status
+      assert: token invalidated
+
+  Feature/Recipe:
+    test_can_list_recipes:
+      get: /api/recipes
+      assert: 200 status
+      assert: response has pagination
+      assert: response has recipes
+
+    test_can_create_recipe:
+      auth: as user
+      post: /api/recipes with valid data
+      assert: 201 status
+      assert: database has recipe
+      assert: response has recipe data
+
+    test_can_view_recipe:
+      create: recipe
+      get: /api/recipes/{id}
+      assert: 200 status
+      assert: response has recipe data
+
+    test_can_update_recipe:
+      auth: as user
+      create: recipe owned by user
+      put: /api/recipes/{id} with valid data
+      assert: 200 status
+      assert: database has updated recipe
+      assert: response has updated recipe data
+
+    test_cannot_update_others_recipe:
+      auth: as user
+      create: recipe owned by other user
+      put: /api/recipes/{id} with valid data
+      assert: 403 status
+
+    test_can_delete_recipe:
+      auth: as user
+      create: recipe owned by user
+      delete: /api/recipes/{id}
+      assert: 204 status
+      assert: database missing recipe
+
+  Feature/Wine:
+    test_can_list_wines:
+      get: /api/wines
+      assert: 200 status
+      assert: response has pagination
+      assert: response has wines
+
+    test_can_create_wine:
+      auth: as user
+      post: /api/wines with valid data
+      assert: 201 status
+      assert: database has wine
+      assert: response has wine data
+
+    test_can_view_wine:
+      create: wine
+      get: /api/wines/{id}
+      assert: 200 status
+      assert: response has wine data
+
+    test_can_update_wine:
+      auth: as user
+      create: wine owned by user
+      put: /api/wines/{id} with valid data
+      assert: 200 status
+      assert: database has updated wine
+      assert: response has updated wine data
+
+  Feature/ShoppingList:
+    test_can_list_shopping_lists:
+      auth: as user
+      get: /api/shopping-lists
+      assert: 200 status
+      assert: response has shopping lists
+
+    test_can_create_shopping_list:
+      auth: as user
+      post: /api/shopping-lists with valid data
+      assert: 201 status
+      assert: database has shopping list
+      assert: response has shopping list data
+
+    test_can_add_recipe_to_shopping_list:
+      auth: as user
+      create: shopping list owned by user
+      create: recipe
+      post: /api/shopping-lists/{id}/recipes/{recipe_id}
+      assert: 200 status
+      assert: database has shopping list items
+      assert: response has updated shopping list

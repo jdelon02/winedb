@@ -1,0 +1,160 @@
+resources:
+  UserResource:
+    resource: User
+    attributes:
+      id: integer
+      name: string
+      email: string
+      profile_image: string
+      bio: string
+      created_at: datetime
+      updated_at: datetime
+      recipes_count: integer
+      wines_count: integer
+      followers_count: integer
+      following_count: integer
+
+  RecipeResource:
+    resource: Recipe
+    attributes:
+      id: integer
+      title: string
+      description: string
+      prep_time: integer
+      cook_time: integer
+      servings: integer
+      difficulty_level: string
+      featured_image: string
+      status: string
+      created_at: datetime
+      updated_at: datetime
+      user: UserResource
+      steps: RecipeStepResource[]
+      ingredients: RecipeIngredientResource[]
+      tags: TagResource[]
+      average_rating: float
+      ratings_count: integer
+
+  WineResource:
+    resource: Wine
+    attributes:
+      id: integer
+      name: string
+      description: string
+      year: integer
+      producer: string
+      country: string
+      region: string
+      featured_image: string
+      status: string
+      created_at: datetime
+      updated_at: datetime
+      user: UserResource
+      varietals: VarietalResource[]
+      classifications: ClassificationResource[]
+      tasting_notes: TastingNoteResource[]
+      average_rating: float
+      ratings_count: integer
+
+  RecipeIngredientResource:
+    resource: RecipeIngredient
+    attributes:
+      id: integer
+      ingredient: IngredientResource
+      quantity: decimal
+      unit: string
+      notes: string
+
+  IngredientResource:
+    resource: Ingredient
+    attributes:
+      id: integer
+      name: string
+      description: string
+
+  VarietalResource:
+    resource: Varietal
+    attributes:
+      id: integer
+      name: string
+      description: string
+
+  ClassificationResource:
+    resource: Classification
+    attributes:
+      id: integer
+      name: string
+      description: string
+
+  TastingNoteResource:
+    resource: TastingNote
+    attributes:
+      id: integer
+      notes: string
+      tasted_at: datetime
+      user: UserResource
+
+  RatingResource:
+    resource: Rating
+    attributes:
+      id: integer
+      rating: integer
+      user: UserResource
+      created_at: datetime
+
+  ReviewResource:
+    resource: Review
+    attributes:
+      id: integer
+      title: string
+      content: string
+      user: UserResource
+      created_at: datetime
+
+  CommentResource:
+    resource: Comment
+    attributes:
+      id: integer
+      content: string
+      user: UserResource
+      created_at: datetime
+
+  TagResource:
+    resource: Tag
+    attributes:
+      id: integer
+      name: string
+      type: string
+
+  GroupResource:
+    resource: Group
+    attributes:
+      id: integer
+      name: string
+      description: string
+      status: string
+      creator: UserResource
+      members_count: integer
+      created_at: datetime
+
+  ShoppingListResource:
+    resource: ShoppingList
+    attributes:
+      id: integer
+      name: string
+      description: string
+      items_count: integer
+      created_at: datetime
+      updated_at: datetime
+      items: ShoppingListItemResource[]
+
+  ShoppingListItemResource:
+    resource: ShoppingListItem
+    attributes:
+      id: integer
+      ingredient: IngredientResource
+      wine: WineResource
+      quantity: decimal
+      unit: string
+      notes: string
+      checked: boolean

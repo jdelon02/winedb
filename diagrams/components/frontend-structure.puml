@@ -1,0 +1,96 @@
+@startuml Frontend Component Structure
+
+package "Core" {
+  [App]
+  [Router]
+  [AuthProvider]
+  [ApiClient]
+}
+
+package "Pages" {
+  [HomePage]
+  [RecipesPage]
+  [RecipeDetailPage]
+  [WinesPage]
+  [WineDetailPage]
+  [ProfilePage]
+  [ShoppingListsPage]
+}
+
+package "Components" {
+  package "Recipe" {
+    [RecipeList]
+    [RecipeCard]
+    [RecipeForm]
+    [RecipeSteps]
+    [IngredientList]
+  }
+  
+  package "Wine" {
+    [WineList]
+    [WineCard]
+    [WineForm]
+    [TastingNotes]
+  }
+  
+  package "Shopping" {
+    [ShoppingList]
+    [ShoppingListForm]
+    [ShoppingListItem]
+  }
+  
+  package "Common" {
+    [Rating]
+    [Comments]
+    [ImageUpload]
+    [Select2]
+    [TagInput]
+  }
+}
+
+package "Forms" {
+  [JsonSchemaForm]
+  [RecipeSchema]
+  [WineSchema]
+  [ShoppingListSchema]
+}
+
+package "Services" {
+  [RecipeService]
+  [WineService]
+  [AuthService]
+  [ShoppingListService]
+}
+
+' Relationships
+[App] --> [Router]
+[App] --> [AuthProvider]
+[Router] --> [HomePage]
+[Router] --> [RecipesPage]
+[Router] --> [WineDetailPage]
+[Router] --> [ProfilePage]
+[Router] --> [ShoppingListsPage]
+
+[RecipesPage] --> [RecipeList]
+[RecipeList] --> [RecipeCard]
+[RecipeDetailPage] --> [RecipeForm]
+[RecipeForm] --> [JsonSchemaForm]
+[RecipeForm] --> [RecipeSchema]
+
+[WinesPage] --> [WineList]
+[WineList] --> [WineCard]
+[WineDetailPage] --> [WineForm]
+[WineForm] --> [JsonSchemaForm]
+[WineForm] --> [WineSchema]
+
+[ShoppingListsPage] --> [ShoppingList]
+[ShoppingList] --> [ShoppingListItem]
+[ShoppingListForm] --> [JsonSchemaForm]
+[ShoppingListForm] --> [ShoppingListSchema]
+
+[RecipeCard] --> [Rating]
+[WineCard] --> [Rating]
+[RecipeDetailPage] --> [Comments]
+[WineDetailPage] --> [Comments]
+
+@enduml

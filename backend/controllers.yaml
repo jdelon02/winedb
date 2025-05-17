@@ -1,0 +1,42 @@
+controllers:
+  Auth:
+    register:
+      validate: name, email, password
+      store: name, email, password
+      send: token
+    login:
+      validate: email, password
+      attempt: email, password
+      send: token
+    logout:
+      middleware: auth:sanctum
+      respond: 204
+
+  Api/User:
+    middleware: auth:sanctum
+    resource: api
+
+  Api/Group:
+    middleware: auth:sanctum
+    resource: api
+    methods: ["index", "show", "store", "update", "destroy"]
+
+  Api/ShoppingList:
+    middleware: auth:sanctum
+    resource: api
+    methods: ["index", "show", "store", "update", "destroy"]
+
+  Api/ShoppingListItem:
+    middleware: auth:sanctum
+    resource: api
+    methods: ["index", "show", "store", "update", "destroy"]
+    
+  Api/UserFollower:
+    middleware: auth:sanctum
+    resource: api
+    only: ["index", "store", "destroy"]
+
+  Api/Message:
+    middleware: auth:sanctum
+    resource: api
+    methods: ["index", "show", "store", "destroy"]

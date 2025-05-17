@@ -1,0 +1,31 @@
+created:
+    - database/factories/GroupFactory.php
+    - database/factories/ShoppingListFactory.php
+    - database/factories/ShoppingListItemFactory.php
+    - database/factories/ActivityFactory.php
+    - database/factories/NotificationFactory.php
+    - database/factories/UserFollowerFactory.php
+    - database/factories/MessageFactory.php
+    - database/migrations/2025_05_17_020801_create_groups_table.php
+    - database/migrations/2025_05_17_020802_create_shopping_lists_table.php
+    - database/migrations/2025_05_17_020803_create_shopping_list_items_table.php
+    - database/migrations/2025_05_17_020804_create_activities_table.php
+    - database/migrations/2025_05_17_020805_create_notifications_table.php
+    - database/migrations/2025_05_17_020806_create_user_followers_table.php
+    - database/migrations/2025_05_17_020807_create_messages_table.php
+    - database/migrations/2025_05_17_020808_create_group_user_table.php
+    - app/Models/Group.php
+    - app/Models/ShoppingList.php
+    - app/Models/ShoppingListItem.php
+    - app/Models/Activity.php
+    - app/Models/Notification.php
+    - app/Models/UserFollower.php
+    - app/Models/Message.php
+models:
+    Group: { id: id, name: string, description: 'text nullable', creator_id: 'id foreign:users', image: 'string nullable', settings: 'json nullable', timestamps: timestamps, softdeletes: softDeletes, relationships: { belongsTo: 'User:creator', belongsToMany: User } }
+    ShoppingList: { id: id, user_id: 'id foreign', name: string, description: 'text nullable', status: 'string default:active', timestamps: timestamps, softdeletes: softDeletes, relationships: { belongsTo: User, hasMany: ShoppingListItem } }
+    ShoppingListItem: { id: id, shopping_list_id: 'id foreign', ingredient_id: 'id foreign nullable', name: string, quantity: 'decimal nullable', unit: 'string nullable', note: 'text nullable', is_checked: 'boolean default:false', timestamps: timestamps, relationships: { belongsTo: 'ShoppingList, Ingredient' } }
+    Activity: { id: id, user_id: 'id foreign', type: string, subject_type: string, subject_id: id, data: 'json nullable', timestamps: timestamps, relationships: { belongsTo: User } }
+    Notification: { id: id, type: string, notifiable_type: string, notifiable_id: id, data: json, read_at: 'timestamp nullable', timestamps: timestamps }
+    UserFollower: { id: id, user_id: 'id foreign', follower_id: 'id foreign', timestamps: timestamps, relationships: { belongsTo: 'User, User:follower' } }
+    Message: { id: id, sender_id: 'id foreign:users', recipient_id: 'id foreign:users', content: text, read_at: 'timestamp nullable', timestamps: timestamps, softdeletes: softDeletes, relationships: { belongsTo: 'User:sender, User:recipient' } }

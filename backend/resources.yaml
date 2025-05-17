@@ -1,0 +1,56 @@
+---
+resources:
+  UserResource:
+    name: string
+    email: string
+    profile_image: string nullable
+    bio: string nullable
+    preferences: json nullable
+    created_at: datetime
+    updated_at: datetime
+
+  GroupResource:
+    id: id
+    name: string
+    description: string nullable
+    creator: UserResource
+    image: string nullable
+    settings: json nullable
+    users: UserResource collection
+    created_at: datetime
+    updated_at: datetime
+
+  ShoppingListResource:
+    id: id
+    name: string
+    description: string nullable
+    status: string
+    user: UserResource
+    items: ShoppingListItemResource collection
+    created_at: datetime
+    updated_at: datetime
+
+  ShoppingListItemResource:
+    id: id
+    name: string
+    quantity: decimal nullable
+    unit: string nullable
+    note: string nullable
+    is_checked: boolean
+    created_at: datetime
+    updated_at: datetime
+
+  UserFollowerResource:
+    id: id
+    user: UserResource
+    follower: UserResource
+    created_at: datetime
+
+  MessageResource:
+    id: id
+    content: string
+    sender: UserResource
+    recipient: UserResource
+    read_at: datetime nullable
+    created_at: datetime
+    updated_at: datetime

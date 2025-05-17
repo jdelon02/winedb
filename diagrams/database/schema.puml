@@ -1,0 +1,104 @@
+@startuml Database Schema
+
+!theme plain
+skinparam linetype ortho
+
+entity "users" {
+  * id: bigint <<PK>>
+  --
+  * name: varchar(255)
+  * email: varchar(255) <<unique>>
+  * password: varchar(255)
+  profile_image: varchar(255)
+  bio: text
+  preferences: json
+  email_verified_at: timestamp
+  remember_token: varchar(255)
+  * created_at: timestamp
+  * updated_at: timestamp
+}
+
+entity "recipes" {
+  * id: bigint <<PK>>
+  --
+  * user_id: bigint <<FK>>
+  * title: varchar(255)
+  * description: text
+  * prep_time: integer
+  * cook_time: integer
+  * servings: integer
+  * difficulty_level: varchar(255)
+  featured_image: varchar(255)
+  * status: varchar(255)
+  * created_at: timestamp
+  * updated_at: timestamp
+  deleted_at: timestamp
+}
+
+entity "wines" {
+  * id: bigint <<PK>>
+  --
+  * user_id: bigint <<FK>>
+  * name: varchar(255)
+  * description: text
+  year: integer
+  * producer: varchar(255)
+  * country: varchar(255)
+  region: varchar(255)
+  featured_image: varchar(255)
+  * status: varchar(255)
+  * created_at: timestamp
+  * updated_at: timestamp
+  deleted_at: timestamp
+}
+
+entity "ingredients" {
+  * id: bigint <<PK>>
+  --
+  * name: varchar(255) <<unique>>
+  description: text
+  * created_at: timestamp
+  * updated_at: timestamp
+}
+
+entity "recipe_ingredient" {
+  * id: bigint <<PK>>
+  --
+  * recipe_id: bigint <<FK>>
+  * ingredient_id: bigint <<FK>>
+  * quantity: decimal
+  * unit: varchar(255)
+  notes: text
+  * created_at: timestamp
+  * updated_at: timestamp
+}
+
+entity "tags" {
+  * id: bigint <<PK>>
+  --
+  * name: varchar(255) <<unique>>
+  type: varchar(255)
+  * created_at: timestamp
+  * updated_at: timestamp
+}
+
+entity "ratings" {
+  * id: bigint <<PK>>
+  --
+  * user_id: bigint <<FK>>
+  * rateable_id: bigint
+  * rateable_type: varchar(255)
+  * rating: integer
+  * created_at: timestamp
+  * updated_at: timestamp
+}
+
+users ||--o{ recipes
+users ||--o{ wines
+recipes ||--o{ recipe_ingredient
+ingredients ||--o{ recipe_ingredient
+recipes }o--o{ tags
+wines }o--o{ tags
+users ||--o{ ratings
+
+@enduml

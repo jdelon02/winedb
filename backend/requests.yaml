@@ -1,0 +1,72 @@
+---
+requests:
+  StoreUserRequest:
+    rules:
+      name: required|string|max:255
+      email: required|email|unique:users
+      password: required|string|min:8|confirmed
+      profile_image: nullable|image|max:2048
+      bio: nullable|string|max:1000
+      preferences: nullable|json
+
+  UpdateUserRequest:
+    rules:
+      name: string|max:255
+      email: email|unique:users
+      password: nullable|string|min:8|confirmed
+      profile_image: nullable|image|max:2048
+      bio: nullable|string|max:1000
+      preferences: nullable|json
+
+  StoreGroupRequest:
+    rules:
+      name: required|string|max:255
+      description: nullable|string|max:1000
+      image: nullable|image|max:2048
+      settings: nullable|json
+      users: nullable|array
+      users.*: exists:users,id
+
+  UpdateGroupRequest:
+    rules:
+      name: string|max:255
+      description: nullable|string|max:1000
+      image: nullable|image|max:2048
+      settings: nullable|json
+      users: nullable|array
+      users.*: exists:users,id
+
+  StoreShoppingListRequest:
+    rules:
+      name: required|string|max:255
+      description: nullable|string|max:1000
+      status: required|string|in:active,completed,archived
+
+  UpdateShoppingListRequest:
+    rules:
+      name: string|max:255
+      description: nullable|string|max:1000
+      status: string|in:active,completed,archived
+
+  StoreShoppingListItemRequest:
+    rules:
+      shopping_list_id: required|exists:shopping_lists,id
+      ingredient_id: nullable|exists:ingredients,id
+      name: required|string|max:255
+      quantity: nullable|numeric
+      unit: nullable|string|max:50
+      note: nullable|string|max:1000
+      is_checked: boolean
+
+  UpdateShoppingListItemRequest:
+    rules:
+      name: string|max:255
+      quantity: nullable|numeric
+      unit: nullable|string|max:50
+      note: nullable|string|max:1000
+      is_checked: boolean
+
+  StoreMessageRequest:
+    rules:
+      recipient_id: required|exists:users,id
+      content: required|string|max:5000

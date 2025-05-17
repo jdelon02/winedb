@@ -1,0 +1,191 @@
+controllers:
+  Api/AuthController:
+    register:
+      validate: name, email, password, password_confirmation
+      create: user
+      fire: Registered with credentials
+      respond: user with token
+    login:
+      validate: email, password
+      attempt: login with credentials
+      respond: user with token
+    logout:
+      middleware: auth:sanctum
+      delete: current token
+      respond: 204
+
+  Api/UserController:
+    middleware: auth:sanctum
+    index:
+      query: all users paginated
+      resource: UserResource collection
+    show:
+      find: user by id
+      resource: UserResource
+    update:
+      validate: name, bio, profile_image
+      update: user
+      resource: UserResource
+    follow:
+      find: user by id
+      attach: follower
+      respond: 204
+    unfollow:
+      find: user by id
+      detach: follower
+      respond: 204
+
+  Api/RecipeController:
+    middleware: auth:sanctum
+    index:
+      query: all recipes with relationships paginated
+      resource: RecipeResource collection
+    store:
+      validate: title, description, prep_time, cook_time, servings, difficulty_level, featured_image?
+      save: recipe for authenticated user
+      resource: RecipeResource
+    show:
+      find: recipe with relationships by id
+      increment: views
+      resource: RecipeResource
+    update:
+      find: recipe by id
+      authorize: update
+      validate: title, description, prep_time, cook_time, servings, difficulty_level, featured_image?
+      update: recipe
+      resource: RecipeResource
+    destroy:
+      find: recipe by id
+      authorize: delete
+      delete: recipe
+      respond: 204
+
+  Api/RecipeIngredientController:
+    middleware: auth:sanctum
+    store:
+      validate: recipe_id, ingredient_id, quantity, unit
+      find: recipe by id
+      authorize: update recipe
+      save: recipe ingredient
+      resource: RecipeIngredientResource
+    update:
+      validate: quantity, unit
+      find: recipe ingredient by id
+      authorize: update recipe
+      update: recipe ingredient
+      resource: RecipeIngredientResource
+    destroy:
+      find: recipe ingredient by id
+      authorize: update recipe
+      delete: recipe ingredient
+      respond: 204
+
+  Api/WineController:
+    middleware: auth:sanctum
+    index:
+      query: all wines with relationships paginated
+      resource: WineResource collection
+    store:
+      validate: name, description, year?, producer, country, region?, featured_image?
+      save: wine for authenticated user
+      resource: WineResource
+    show:
+      find: wine with relationships by id
+      increment: views
+      resource: WineResource
+    update:
+      find: wine by id
+      authorize: update
+      validate: name, description, year?, producer, country, region?, featured_image?
+      update: wine
+      resource: WineResource
+    destroy:
+      find: wine by id
+      authorize: delete
+      delete: wine
+      respond: 204
+
+  Api/TastingNoteController:
+    middleware: auth:sanctum
+    store:
+      validate: wine_id, notes
+      find: wine by id
+      save: tasting note for authenticated user
+      resource: TastingNoteResource
+    update:
+      validate: notes
+      find: tasting note by id
+      authorize: update
+      update: tasting note
+      resource: TastingNoteResource
+    destroy:
+      find: tasting note by id
+      authorize: delete
+      delete: tasting note
+      respond: 204
+
+  Api/RatingController:
+    middleware: auth:sanctum
+    store:
+      validate: rateable_id, rateable_type, rating
+      save: rating for authenticated user
+      resource: RatingResource
+
+  Api/ReviewController:
+    middleware: auth:sanctum
+    store:
+      validate: reviewable_id, reviewable_type, title, content
+      save: review for authenticated user
+      resource: ReviewResource
+
+  Api/CommentController:
+    middleware: auth:sanctum
+    store:
+      validate: commentable_id, commentable_type, content
+      save: comment for authenticated user
+      resource: CommentResource
+
+  Api/ShoppingListController:
+    middleware: auth:sanctum
+    index:
+      query: authenticated user shopping lists with items
+      resource: ShoppingListResource collection
+    store:
+      validate: name, description?
+      save: shopping list for authenticated user
+      resource: ShoppingListResource
+    show:
+      find: shopping list with items by id
+      authorize: view
+      resource: ShoppingListResource
+    update:
+      find: shopping list by id
+      authorize: update
+      validate: name, description?
+      update: shopping list
+      resource: ShoppingListResource
+    destroy:
+      find: shopping list by id
+      authorize: delete
+      delete: shopping list
+      respond: 204
+
+  Api/ShoppingListItemController:
+    middleware: auth:sanctum
+    store:
+      validate: shopping_list_id, ingredient_id?, wine_id?, quantity?, unit?, notes?
+      find: shopping list by id
+      authorize: update
+      save: shopping list item
+      resource: ShoppingListItemResource
+    update:
+      validate: quantity?, unit?, notes?, checked?
+      find: shopping list item by id
+      authorize: update
+      update: shopping list item
+      resource: ShoppingListItemResource
+    destroy:
+      find: shopping list item by id
+      authorize: delete
+      delete: shopping list item
+      respond: 204

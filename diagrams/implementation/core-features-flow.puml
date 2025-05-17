@@ -1,0 +1,51 @@
+@startuml Core Features Implementation Flow
+
+skinparam {
+  ArrowColor #2C3E50
+  ArrowFontColor #2C3E50
+  ArrowFontSize 12
+  ArrowThickness 2
+}
+
+' Core Systems
+rectangle "Authentication" as Auth #ABEBC6
+rectangle "Authorization" as Authz #ABEBC6
+rectangle "Image Management" as Images #F5B7B1
+rectangle "Tag System" as Tags #F5B7B1
+
+' Recipe Management
+rectangle "Basic Recipe CRUD" as RecipeCRUD #AED6F1
+rectangle "Recipe Components" as RecipeComp #AED6F1
+rectangle "Recipe Relationships" as RecipeRel #AED6F1
+
+' Wine Management
+rectangle "Basic Wine CRUD" as WineCRUD #D2B4DE
+rectangle "Wine Components" as WineComp #D2B4DE
+rectangle "Wine Relationships" as WineRel #D2B4DE
+
+' Common Features
+rectangle "Search & Filter" as Search #FAD7A0
+rectangle "Rating System" as Rating #FAD7A0
+rectangle "Comments" as Comments #FAD7A0
+
+' Dependencies
+Auth --> Authz
+Auth --> RecipeCRUD
+Auth --> WineCRUD
+Images --> RecipeComp
+Images --> WineComp
+Tags --> RecipeRel
+Tags --> WineRel
+
+RecipeCRUD --> RecipeComp
+RecipeComp --> RecipeRel
+WineCRUD --> WineComp
+WineComp --> WineRel
+
+RecipeRel --> Search
+WineRel --> Search
+RecipeRel --> Rating
+WineRel --> Rating
+Rating --> Comments
+
+@enduml
